@@ -1,0 +1,141 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ——— Enums ———
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  TECHNICIAN
+  REQUESTER
+}
+
+enum WorkOrderStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrderPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AssetOperationalStatus {
+  OPERATIONAL
+  DEGRADED
+  OFFLINE
+  DECOMMISSIONED
+}
+
+// ——— Auth & people ———
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      UserRole @default(REQUESTER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workOrdersRequested WorkOrder[]     @relation("WorkOrderRequester")
+  workOrdersAssigned  WorkOrder[]     @relation("WorkOrderAssignee")
+  workOrderNotes      WorkOrderNote[]
+}
+
+// ——— Locations & equipment ———
+
+model Site {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets     Asset[]
+  workOrders WorkOrder[]
+}
+
+model Asset {
+  id                  String                   @id @default(cuid())
+  siteId              String
+  site                Site                     @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  name                String
+  description         String?
+  serialNumber        String?                  @unique
+  operationalStatus   AssetOperationalStatus   @default(OPERATIONAL)
+  installedAt         DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  workOrders WorkOrder[]
+
+  @@index([siteId])
+  @@index([operationalStatus])
+}
+
+// ——— Work management ———
+
+model WorkOrder {
+  id          String            @id @default(cuid())
+  /// Human-facing reference (e.g. WO-2026-00042). Set in application logic.
+  code        String            @unique
+  title       String
+  description String?
+  status      WorkOrderStatus   @default(OPEN)
+  priority    WorkOrderPriority @default(MEDIUM)
+
+  siteId String
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Restrict)
+
+  assetId String?
+  asset   Asset?  @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  requesterId String
+  requester   User   @relation("WorkOrderRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+
+  assigneeId String?
+  assignee   User?   @relation("WorkOrderAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  dueAt       DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  notes WorkOrderNote[]
+
+  @@index([siteId])
+  @@index([assetId])
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([requesterId])
+  @@index([dueAt])
+}
+
+model WorkOrderNote {
+  id          String    @id @default(cuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  body        String
+  createdAt   DateTime  @default(now())
+
+  @@index([workOrderId])
+  @@index([authorId])
+}

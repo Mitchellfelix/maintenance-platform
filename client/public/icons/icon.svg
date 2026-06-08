@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Maintenance Platform icon">
+  <defs><linearGradient id="g" x1="16" x2="112" y1="16" y2="112"><stop stop-color="#22c55e"/><stop offset="1" stop-color="#0f172a"/></linearGradient></defs>
+  <rect width="128" height="128" rx="28" fill="url(#g)"/>
+  <path d="M82 24 61 45l11 11-30 30-12 4 4-12 30-30-11-11 21-21 8 8Z" fill="white" opacity=".95"/>
+  <circle cx="86" cy="86" r="20" fill="none" stroke="white" stroke-width="10" opacity=".95"/>
+</svg>
