@@ -1,5 +1,5 @@
 const request = require("supertest");
-const { getApp } = require("./helpers");
+const { getApp, describeIfDb, setupDbHooks } = require("./helpers");
 
 describe("health routes", () => {
   let app;
@@ -15,23 +15,25 @@ describe("health routes", () => {
     expect(response.body.status).toBe("ok");
     expect(response.body.service).toBe("maintenance-platform");
   });
-});
 
-const hasDatabase = Boolean(process.env.DATABASE_URL);
-const describeIfDb = hasDatabase ? describe : describe.skip;
+  it("lists API endpoints", async () => {
+    const response = await request(app).get("/api");
+
+    expect(response.status).toBe(200);
+    expect(response.body.name).toBe("Maintenance Platform API");
+    expect(response.body.endpoints).toContain("/api/health");
+    expect(response.body.endpoints).toContain("/api/workorders");
+  });
+});
 
 describeIfDb("health routes with database", () => {
   let app;
-  const prisma = require("../src/lib/prisma");
 
-  beforeAll(async () => {
+  beforeAll(() => {
     app = getApp();
-    await prisma.$connect();
   });
 
-  afterAll(async () => {
-    await prisma.$disconnect();
-  });
+  setupDbHooks();
 
   it("returns ok when database is reachable", async () => {
     const response = await request(app).get("/api/health/db");

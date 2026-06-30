@@ -3,7 +3,6 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const cors = require("cors");
-const { Prisma } = require("@prisma/client");
 const routes = require("./routes");
 const authRoutes = require("./routes/auth");
 const siteRoutes = require("./routes/sites");
@@ -31,16 +30,14 @@ function createApp() {
     if (res.headersSent) return next(err);
     console.error(err);
 
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Duplicate value", field: err.meta?.target });
-      }
-      if (err.code === "P2025") {
-        return res.status(404).json({ error: "Record not found" });
-      }
-      if (err.code === "P2003") {
-        return res.status(400).json({ error: "Related record not found" });
-      }
+    if (err.code === "P2002") {
+      return res.status(409).json({ error: "Duplicate value", field: err.meta?.target });
+    }
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Record not found" });
+    }
+    if (err.code === "P2003") {
+      return res.status(400).json({ error: "Related record not found" });
     }
 
     const status = err.status || 500;
