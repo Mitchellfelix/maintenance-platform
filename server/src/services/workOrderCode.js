@@ -1,4 +1,3 @@
-const { Prisma } = require("@prisma/client");
 const prisma = require("../lib/prisma");
 
 const MAX_RETRIES = 3;
@@ -37,11 +36,7 @@ async function createWorkOrderWithCode(data) {
       });
     } catch (error) {
       lastError = error;
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002" &&
-        attempt < MAX_RETRIES - 1
-      ) {
+      if (error.code === "P2002" && attempt < MAX_RETRIES - 1) {
         continue;
       }
       throw error;
