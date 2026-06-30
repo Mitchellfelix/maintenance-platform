@@ -1,5 +1,9 @@
+const request = require("supertest");
 const { createApp } = require("../src/app");
 const prisma = require("../src/lib/prisma");
+
+const hasDatabase = process.env.DB_TESTS_AVAILABLE === "true";
+const describeIfDb = hasDatabase ? describe : describe.skip;
 
 function getApp() {
   return createApp();
@@ -15,14 +19,59 @@ async function resetDatabase() {
 
 async function registerUser(app, overrides = {}) {
   const payload = {
-    email: `user-${Date.now()}@example.com`,
+    email: `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
     password: "password123",
     name: "Test User",
     ...overrides,
   };
 
-  const response = await app.post("/api/auth/register").send(payload);
+  const response = await request(app).post("/api/auth/register").send(payload);
   return { response, payload };
 }
 
-module.exports = { getApp, resetDatabase, registerUser };
+async function createSite(app, token, overrides = {}) {
+  const payload = { name: "Plant A", address: "123 Main St", ...overrides };
+  const response = await request(app)
+    .post("/api/sites")
+    .set("Authorization", `Bearer ${token}`)
+    .send(payload);
+  return { response, payload };
+}
+
+async function createAsset(app, token, siteId, overrides = {}) {
+  const payload = { siteId, name: "Pump 1", ...overrides };
+  const response = await request(app)
+    .post("/api/assets")
+    .set("Authorization", `Bearer ${token}`)
+    .send(payload);
+  return { response, payload };
+}
+
+function authHeader(token) {
+  return { Authorization: `Bearer ${token}` };
+}
+
+function setupDbHooks() {
+  beforeAll(async () => {
+    await prisma.$connect();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase();
+  });
+}
+
+module.exports = {
+  describeIfDb,
+  getApp,
+  resetDatabase,
+  registerUser,
+  createSite,
+  createAsset,
+  authHeader,
+  setupDbHooks,
+};

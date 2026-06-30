@@ -1,26 +1,20 @@
 const request = require("supertest");
-const prisma = require("../src/lib/prisma");
-const { getApp, resetDatabase, registerUser } = require("./helpers");
-
-const hasDatabase = Boolean(process.env.DATABASE_URL);
-const describeIfDb = hasDatabase ? describe : describe.skip;
+const {
+  describeIfDb,
+  getApp,
+  registerUser,
+  setupDbHooks,
+  authHeader,
+} = require("./helpers");
 
 describeIfDb("auth routes", () => {
   let app;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     app = getApp();
-    await prisma.$connect();
-    await resetDatabase();
   });
 
-  afterAll(async () => {
-    await prisma.$disconnect();
-  });
-
-  beforeEach(async () => {
-    await resetDatabase();
-  });
+  setupDbHooks();
 
   it("registers a user and returns a token", async () => {
     const { response } = await registerUser(app);
@@ -48,7 +42,7 @@ describeIfDb("auth routes", () => {
 
     const response = await request(app)
       .get("/api/auth/me")
-      .set("Authorization", `Bearer ${registerResponse.body.token}`);
+      .set(authHeader(registerResponse.body.token));
 
     expect(response.status).toBe(200);
     expect(response.body.email).toBe(payload.email);
@@ -57,5 +51,52 @@ describeIfDb("auth routes", () => {
   it("returns 401 without a token on protected routes", async () => {
     const response = await request(app).post("/api/sites").send({ name: "Plant A" });
     expect(response.status).toBe(401);
+    expect(response.body.error).toBe("No token provided");
+  });
+
+  it("returns 401 for invalid login credentials", async () => {
+    await registerUser(app);
+
+    const response = await request(app).post("/api/auth/login").send({
+      email: "missing@example.com",
+      password: "wrongpassword",
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe("Invalid credentials");
+  });
+
+  it("returns 409 for duplicate email registration", async () => {
+    const { payload } = await registerUser(app);
+
+    const response = await request(app).post("/api/auth/register").send(payload);
+
+    expect(response.status).toBe(409);
+    expect(response.body.error).toBe("Duplicate value");
+  });
+
+  it("returns 400 for invalid registration payload", async () => {
+    const response = await request(app).post("/api/auth/register").send({
+      email: "not-an-email",
+      password: "short",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Validation failed");
+  });
+
+  it("returns 401 for /api/auth/me without a token", async () => {
+    const response = await request(app).get("/api/auth/me");
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe("No token provided");
+  });
+
+  it("returns 401 for /api/auth/me with an invalid token", async () => {
+    const response = await request(app)
+      .get("/api/auth/me")
+      .set(authHeader("invalid-token"));
+
+    expect(response.status).toBe(401);
+    expect(response.body.error).toBe("Invalid token");
   });
 });

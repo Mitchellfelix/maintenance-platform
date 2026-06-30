@@ -3,5 +3,7 @@ dist/
 server/public/
 server/.env
 server/.env.test
+server/tests/.db-available
+server/coverage/
 *.log
 .DS_Store

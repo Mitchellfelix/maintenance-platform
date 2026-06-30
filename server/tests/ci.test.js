@@ -1,7 +1,7 @@
-test("CI uses a database URL", () => {
+test("CI uses a reachable database", () => {
   if (!process.env.CI) {
     return;
   }
 
-  expect(process.env.DATABASE_URL).toBeTruthy();
+  expect(process.env.DB_TESTS_AVAILABLE).toBe("true");
 });

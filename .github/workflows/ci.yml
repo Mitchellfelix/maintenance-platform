@@ -47,5 +47,5 @@ jobs:
       - name: Syntax check
         run: npm run test:check --workspace server
 
-      - name: Run tests
-        run: npm test --workspace server
+      - name: Run tests with coverage
+        run: npm run test:coverage --workspace server
