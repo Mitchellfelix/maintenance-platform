@@ -1,12 +1,20 @@
 const { createApp } = require("./src/app");
 const prisma = require("./src/lib/prisma");
+const { validateEnv, verifyDatabaseConnection } = require("./src/lib/startup");
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = createApp();
 
-const server = app.listen(PORT, () => {
-  console.log(`Maintenance Platform running on http://localhost:${PORT}`);
-});
+let server;
+
+async function start() {
+  validateEnv();
+  await verifyDatabaseConnection();
+
+  server = app.listen(PORT, () => {
+    console.log(`Maintenance Platform running on http://localhost:${PORT}`);
+  });
+}
 
 async function shutdown() {
   try {
@@ -14,9 +22,22 @@ async function shutdown() {
   } catch (err) {
     console.error(err);
   } finally {
-    server.close(() => process.exit(0));
+    if (server) {
+      server.close(() => process.exit(0));
+    } else {
+      process.exit(0);
+    }
   }
 }
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
+
+start().catch((err) => {
+  console.error("Failed to start server:", err.message);
+  process.exit(1);
+});

@@ -3,7 +3,7 @@ const prisma = require("../lib/prisma");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { createWorkOrderSchema, updateWorkOrderSchema } = require("../schemas/workOrder");
-const { generateWorkOrderCode } = require("../services/workOrderCode");
+const { createWorkOrderWithCode } = require("../services/workOrderCode");
 const { applyStatusTimestamps } = require("../services/workOrderStatus");
 
 const router = express.Router();
@@ -35,13 +35,9 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", auth, validate(createWorkOrderSchema), async (req, res, next) => {
   try {
-    const code = await generateWorkOrderCode();
-    const workOrder = await prisma.workOrder.create({
-      data: {
-        ...req.validated,
-        code,
-        requesterId: req.user.id,
-      },
+    const workOrder = await createWorkOrderWithCode({
+      ...req.validated,
+      requesterId: req.user.id,
     });
     res.status(201).json(workOrder);
   } catch (error) {

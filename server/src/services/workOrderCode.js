@@ -1,10 +1,12 @@
+const { Prisma } = require("@prisma/client");
 const prisma = require("../lib/prisma");
 
-async function generateWorkOrderCode() {
-  const year = new Date().getFullYear();
-  const prefix = `WO-${year}-`;
+const MAX_RETRIES = 3;
 
-  const latest = await prisma.workOrder.findFirst({
+async function nextCodeForPrefix(tx, prefix) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${prefix}))`;
+
+  const latest = await tx.workOrder.findFirst({
     where: { code: { startsWith: prefix } },
     orderBy: { code: "desc" },
     select: { code: true },
@@ -22,4 +24,31 @@ async function generateWorkOrderCode() {
   return `${prefix}${String(nextNumber).padStart(5, "0")}`;
 }
 
-module.exports = { generateWorkOrderCode };
+async function createWorkOrderWithCode(data) {
+  const year = new Date().getFullYear();
+  const prefix = `WO-${year}-`;
+
+  let lastError;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const code = await nextCodeForPrefix(tx, prefix);
+        return tx.workOrder.create({ data: { ...data, code } });
+      });
+    } catch (error) {
+      lastError = error;
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        attempt < MAX_RETRIES - 1
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError;
+}
+
+module.exports = { createWorkOrderWithCode };
