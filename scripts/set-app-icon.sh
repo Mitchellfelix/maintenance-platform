@@ -29,7 +29,10 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 echo "Rendering icon from SVG..."
-qlmanage -t -s 1024 -o "$WORK_DIR" "$SVG" >/dev/null 2>&1
+QL_OUTPUT=""
+if ! QL_OUTPUT="$(qlmanage -t -s 1024 -o "$WORK_DIR" "$SVG" 2>&1)"; then
+  :
+fi
 
 # qlmanage names output: icon.svg.png
 if [[ -f "$WORK_DIR/icon.svg.png" ]]; then
@@ -37,7 +40,13 @@ if [[ -f "$WORK_DIR/icon.svg.png" ]]; then
 else
   # fallback naming
   RENDERED="$(find "$WORK_DIR" -maxdepth 1 -name '*.png' | head -1)"
-  [[ -n "$RENDERED" ]] || { echo "Error: Could not render SVG to PNG."; exit 1; }
+  if [[ -z "$RENDERED" ]]; then
+    echo "Error: Could not render SVG to PNG."
+    if [[ -n "$QL_OUTPUT" ]]; then
+      echo "$QL_OUTPUT" >&2
+    fi
+    exit 1
+  fi
   mv "$RENDERED" "$SOURCE_PNG"
 fi
 
