@@ -1,7 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
+const { sitesWrite, sitesDelete } = require("../middleware/routeGuards");
 const { createSiteSchema, updateSiteSchema } = require("../schemas/site");
 
 const router = express.Router();
@@ -31,7 +31,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", auth, validate(createSiteSchema), async (req, res, next) => {
+router.post("/", ...sitesWrite, validate(createSiteSchema), async (req, res, next) => {
   try {
     const site = await prisma.site.create({ data: req.validated });
     res.status(201).json(site);
@@ -40,7 +40,7 @@ router.post("/", auth, validate(createSiteSchema), async (req, res, next) => {
   }
 });
 
-router.patch("/:id", auth, validate(updateSiteSchema), async (req, res, next) => {
+router.patch("/:id", ...sitesWrite, validate(updateSiteSchema), async (req, res, next) => {
   try {
     const site = await prisma.site.update({
       where: { id: req.params.id },
@@ -52,7 +52,7 @@ router.patch("/:id", auth, validate(updateSiteSchema), async (req, res, next) =>
   }
 });
 
-router.delete("/:id", auth, async (req, res, next) => {
+router.delete("/:id", ...sitesDelete, async (req, res, next) => {
   try {
     const site = await prisma.site.findUnique({
       where: { id: req.params.id },

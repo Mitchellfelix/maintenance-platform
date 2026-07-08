@@ -1,7 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
+const { assetsWrite, assetsDelete } = require("../middleware/routeGuards");
 const { createAssetSchema, updateAssetSchema } = require("../schemas/asset");
 
 const router = express.Router();
@@ -31,7 +31,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", auth, validate(createAssetSchema), async (req, res, next) => {
+router.post("/", ...assetsWrite, validate(createAssetSchema), async (req, res, next) => {
   try {
     const asset = await prisma.asset.create({ data: req.validated });
     res.status(201).json(asset);
@@ -40,7 +40,7 @@ router.post("/", auth, validate(createAssetSchema), async (req, res, next) => {
   }
 });
 
-router.patch("/:id", auth, validate(updateAssetSchema), async (req, res, next) => {
+router.patch("/:id", ...assetsWrite, validate(updateAssetSchema), async (req, res, next) => {
   try {
     const asset = await prisma.asset.update({
       where: { id: req.params.id },
@@ -52,7 +52,7 @@ router.patch("/:id", auth, validate(updateAssetSchema), async (req, res, next) =
   }
 });
 
-router.delete("/:id", auth, async (req, res, next) => {
+router.delete("/:id", ...assetsDelete, async (req, res, next) => {
   try {
     const asset = await prisma.asset.findUnique({
       where: { id: req.params.id },

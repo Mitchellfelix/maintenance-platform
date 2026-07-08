@@ -18,15 +18,41 @@ async function resetDatabase() {
 }
 
 async function registerUser(app, overrides = {}) {
+  const { role = "ADMIN", ...rest } = overrides;
   const payload = {
     email: `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
     password: "password123",
     name: "Test User",
-    ...overrides,
+    ...rest,
   };
 
-  const response = await request(app).post("/api/auth/register").send(payload);
-  return { response, payload };
+  const registerResponse = await request(app).post("/api/auth/register").send(payload);
+
+  if (registerResponse.status !== 201) {
+    return { response: registerResponse, payload };
+  }
+
+  if (role !== "REQUESTER") {
+    await prisma.user.update({
+      where: { email: payload.email },
+      data: { role },
+    });
+
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: payload.email,
+      password: payload.password,
+    });
+
+    return {
+      response: {
+        status: loginResponse.status,
+        body: loginResponse.body,
+      },
+      payload,
+    };
+  }
+
+  return { response: registerResponse, payload };
 }
 
 async function createSite(app, token, overrides = {}) {

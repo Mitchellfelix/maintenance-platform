@@ -1,0 +1,34 @@
+const { hasPermission } = require("../lib/permissions");
+
+function canEditWorkOrder(user, workOrder) {
+  if (!user || !workOrder) return false;
+  if (user.role === "ADMIN" || user.role === "MANAGER") return true;
+  if (user.role === "TECHNICIAN" && workOrder.assigneeId === user.id) return true;
+  if (user.role === "REQUESTER" && workOrder.requesterId === user.id) return true;
+  return false;
+}
+
+function filterWorkOrderUpdate(user, updates) {
+  if (user.role === "ADMIN" || user.role === "MANAGER") {
+    return updates;
+  }
+
+  const data = { ...updates };
+
+  if (!hasPermission(user.role, "workorders:assign")) {
+    delete data.assigneeId;
+    delete data.siteId;
+    delete data.assetId;
+  }
+
+  if (user.role === "REQUESTER") {
+    const allowed = {};
+    if (data.title !== undefined) allowed.title = data.title;
+    if (data.description !== undefined) allowed.description = data.description;
+    return allowed;
+  }
+
+  return data;
+}
+
+module.exports = { canEditWorkOrder, filterWorkOrderUpdate };

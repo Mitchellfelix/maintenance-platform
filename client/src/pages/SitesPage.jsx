@@ -8,7 +8,7 @@ import LoadingState from "../components/LoadingState.jsx";
 import PageHeader, { EmptyState, RecordLink } from "../components/PageHeader.jsx";
 
 export default function SitesPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, can } = useAuth();
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,13 +61,15 @@ export default function SitesPage() {
             <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to create
             </Link>
+          ) : !can("sites:write") ? (
+            <span className="text-sm text-slate-500">Operator access required to create</span>
           ) : null
         }
       />
 
       <ErrorBanner message={error} />
 
-      {isAuthenticated ? (
+      {isAuthenticated && can("sites:write") ? (
         <form className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
           <FormField label="Site name" name="name" value={form.name} onChange={updateField} required />
           <FormField label="Address" name="address" value={form.address} onChange={updateField} />

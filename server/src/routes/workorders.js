@@ -1,10 +1,11 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
+const { workOrdersCreate, workOrdersUpdate, workOrdersDelete } = require("../middleware/routeGuards");
 const { createWorkOrderSchema, updateWorkOrderSchema } = require("../schemas/workOrder");
 const { createWorkOrderWithCode } = require("../services/workOrderCode");
 const { applyStatusTimestamps } = require("../services/workOrderStatus");
+const { canEditWorkOrder, filterWorkOrderUpdate } = require("../services/workOrderAccess");
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-router.post("/", auth, validate(createWorkOrderSchema), async (req, res, next) => {
+router.post("/", ...workOrdersCreate, validate(createWorkOrderSchema), async (req, res, next) => {
   try {
     const workOrder = await createWorkOrderWithCode({
       ...req.validated,
@@ -45,12 +46,21 @@ router.post("/", auth, validate(createWorkOrderSchema), async (req, res, next) =
   }
 });
 
-router.patch("/:id", auth, validate(updateWorkOrderSchema), async (req, res, next) => {
+router.patch("/:id", ...workOrdersUpdate, validate(updateWorkOrderSchema), async (req, res, next) => {
   try {
     const existing = await prisma.workOrder.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: "Work order not found" });
 
-    const data = applyStatusTimestamps(existing, req.validated);
+    if (!canEditWorkOrder(req.user, existing)) {
+      return res.status(403).json({ error: "Forbidden", message: "You cannot edit this work order" });
+    }
+
+    const filtered = filterWorkOrderUpdate(req.user, req.validated);
+    if (Object.keys(filtered).length === 0) {
+      return res.status(400).json({ error: "No allowed fields to update for your role" });
+    }
+
+    const data = applyStatusTimestamps(existing, filtered);
     const workOrder = await prisma.workOrder.update({
       where: { id: req.params.id },
       data,
@@ -61,7 +71,7 @@ router.patch("/:id", auth, validate(updateWorkOrderSchema), async (req, res, nex
   }
 });
 
-router.delete("/:id", auth, async (req, res, next) => {
+router.delete("/:id", ...workOrdersDelete, async (req, res, next) => {
   try {
     await prisma.workOrder.delete({ where: { id: req.params.id } });
     res.status(204).send();

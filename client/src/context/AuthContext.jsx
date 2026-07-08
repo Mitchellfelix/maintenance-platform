@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api, getStoredToken, setStoredToken, getErrorMessage } from "../api/client.js";
+import { getRoleLabel, hasPermission } from "../lib/permissions.js";
 
 const AuthContext = createContext(null);
 
@@ -51,6 +52,13 @@ export function AuthProvider({ children }) {
     return response.data.user;
   }, []);
 
+  const can = useCallback(
+    (permission) => hasPermission(user?.role, permission),
+    [user?.role],
+  );
+
+  const roleLabel = useMemo(() => getRoleLabel(user?.role), [user?.role]);
+
   const value = useMemo(
     () => ({
       user,
@@ -61,8 +69,10 @@ export function AuthProvider({ children }) {
       logout,
       refreshUser,
       getErrorMessage,
+      can,
+      roleLabel,
     }),
-    [user, loading, login, register, logout, refreshUser],
+    [user, loading, login, register, logout, refreshUser, can, roleLabel],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

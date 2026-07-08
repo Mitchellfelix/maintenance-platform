@@ -6,6 +6,7 @@ const navItems = [
   { to: "/sites", label: "Sites" },
   { to: "/assets", label: "Assets" },
   { to: "/workorders", label: "Work Orders" },
+  { to: "/admin/users", label: "User access", permission: "users:read" },
 ];
 
 function navClassName({ isActive }) {
@@ -16,7 +17,7 @@ function navClassName({ isActive }) {
 }
 
 export default function Layout() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, can, roleLabel } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
@@ -30,7 +31,9 @@ export default function Layout() {
           </div>
 
           <nav className="flex flex-col gap-1">
-            {navItems.map((item) => (
+            {navItems
+              .filter((item) => !item.permission || can(item.permission))
+              .map((item) => (
               <NavLink key={item.to} to={item.to} end={item.end} className={navClassName}>
                 {item.label}
               </NavLink>
@@ -41,7 +44,7 @@ export default function Layout() {
             {isAuthenticated ? (
               <>
                 <p className="text-sm font-medium">{user?.name || user?.email}</p>
-                <p className="mt-1 text-xs capitalize text-slate-400">{user?.role?.toLowerCase()}</p>
+                <p className="mt-1 text-xs text-slate-400">{roleLabel}</p>
                 <button
                   type="button"
                   onClick={logout}

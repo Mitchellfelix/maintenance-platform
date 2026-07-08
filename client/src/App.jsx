@@ -9,6 +9,8 @@ import SiteDetailPage from "./pages/SiteDetailPage.jsx";
 import SitesPage from "./pages/SitesPage.jsx";
 import WorkOrderDetailPage from "./pages/WorkOrderDetailPage.jsx";
 import WorkOrdersPage from "./pages/WorkOrdersPage.jsx";
+import PermissionRoute from "./components/PermissionRoute.jsx";
+import UsersAdminPage from "./pages/UsersAdminPage.jsx";
 
 export default function App() {
   return (
@@ -23,6 +25,14 @@ export default function App() {
             <Route path="/assets/:id" element={<AssetDetailPage />} />
             <Route path="/workorders" element={<WorkOrdersPage />} />
             <Route path="/workorders/:id" element={<WorkOrderDetailPage />} />
+            <Route
+              path="/admin/users"
+              element={
+                <PermissionRoute permission="users:read">
+                  <UsersAdminPage />
+                </PermissionRoute>
+              }
+            />
           </Route>
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
