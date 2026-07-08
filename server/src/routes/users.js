@@ -1,12 +1,25 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
 const validate = require("../middleware/validate");
-const { usersRead, usersUpdate } = require("../middleware/routeGuards");
+const { usersRead, usersUpdate, workOrdersAssign } = require("../middleware/routeGuards");
 const { updateUserRoleSchema } = require("../schemas/user");
 const { ROLES, ROLE_LABELS, canManageRole } = require("../lib/permissions");
 const { sanitizeUser } = require("../services/authService");
 
 const router = express.Router();
+
+router.get("/assignees", ...workOrdersAssign, async (req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { role: { in: ["TECHNICIAN", "MANAGER", "ADMIN"] } },
+      orderBy: { name: "asc" },
+      select: { id: true, email: true, name: true, role: true },
+    });
+    res.json(users);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get("/roles", ...usersRead, async (req, res) => {
   res.json({

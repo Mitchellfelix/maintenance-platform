@@ -64,6 +64,18 @@ describeIfDb("role-based access control", () => {
     expect(patchResponse.body.role).toBe("TECHNICIAN");
   });
 
+  it("allows operators to list assignees", async () => {
+    const { response } = await registerUser(app, { role: "MANAGER" });
+    const token = response.body.token;
+
+    const assigneesResponse = await request(app)
+      .get("/api/users/assignees")
+      .set(authHeader(token));
+
+    expect(assigneesResponse.status).toBe(200);
+    expect(Array.isArray(assigneesResponse.body)).toBe(true);
+  });
+
   it("blocks non-admin from user management", async () => {
     const { response } = await registerUser(app, { role: "MANAGER" });
     const token = response.body.token;

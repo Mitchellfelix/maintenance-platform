@@ -23,7 +23,7 @@ const emptyForm = {
 };
 
 export default function AssetsPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, can } = useAuth();
   const [assets, setAssets] = useState([]);
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -89,13 +89,15 @@ export default function AssetsPage() {
             <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to create
             </Link>
+          ) : !can("assets:write") ? (
+            <span className="text-sm text-slate-500">Operator access required to create</span>
           ) : null
         }
       />
 
       <ErrorBanner message={error} />
 
-      {isAuthenticated ? (
+      {isAuthenticated && can("assets:write") ? (
         <form className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
           <FormField
             label="Site"

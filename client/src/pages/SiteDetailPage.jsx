@@ -10,7 +10,7 @@ import PageHeader from "../components/PageHeader.jsx";
 export default function SiteDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, can } = useAuth();
   const [site, setSite] = useState(null);
   const [form, setForm] = useState({ name: "", address: "" });
   const [loading, setLoading] = useState(true);
@@ -98,7 +98,7 @@ export default function SiteDetailPage() {
           </dl>
         </section>
 
-        {isAuthenticated ? (
+        {isAuthenticated && can("sites:write") ? (
           <form className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit site</h3>
             <FormField label="Site name" name="name" value={form.name} onChange={updateField} required />
@@ -111,22 +111,30 @@ export default function SiteDetailPage() {
               >
                 Save changes
               </button>
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={handleDelete}
-                className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700"
-              >
-                Delete site
-              </button>
+              {can("sites:delete") ? (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleDelete}
+                  className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700"
+                >
+                  Delete site
+                </button>
+              ) : null}
             </div>
           </form>
         ) : (
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-500">Sign in to edit or delete this site.</p>
-            <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
-              Sign in
-            </Link>
+            <p className="text-sm text-slate-500">
+              {!isAuthenticated
+                ? "Sign in to edit or delete this site."
+                : "Operator access is required to edit sites."}
+            </p>
+            {!isAuthenticated ? (
+              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+                Sign in
+              </Link>
+            ) : null}
           </section>
         )}
       </div>

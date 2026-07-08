@@ -19,7 +19,7 @@ const statusOptions = [
 export default function AssetDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, can } = useAuth();
   const [asset, setAsset] = useState(null);
   const [sites, setSites] = useState([]);
   const [form, setForm] = useState({
@@ -136,7 +136,7 @@ export default function AssetDetailPage() {
           {asset.description ? <p className="mt-4 text-sm text-slate-600">{asset.description}</p> : null}
         </section>
 
-        {isAuthenticated ? (
+        {isAuthenticated && can("assets:write") ? (
           <form className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit asset</h3>
             <FormField
@@ -172,22 +172,30 @@ export default function AssetDetailPage() {
               >
                 Save changes
               </button>
-              <button
-                type="button"
-                disabled={submitting}
-                onClick={handleDelete}
-                className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700"
-              >
-                Delete asset
-              </button>
+              {can("assets:delete") ? (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleDelete}
+                  className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700"
+                >
+                  Delete asset
+                </button>
+              ) : null}
             </div>
           </form>
         ) : (
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-500">Sign in to edit or delete this asset.</p>
-            <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
-              Sign in
-            </Link>
+            <p className="text-sm text-slate-500">
+              {!isAuthenticated
+                ? "Sign in to edit or delete this asset."
+                : "Operator access is required to edit assets."}
+            </p>
+            {!isAuthenticated ? (
+              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+                Sign in
+              </Link>
+            ) : null}
           </section>
         )}
       </div>

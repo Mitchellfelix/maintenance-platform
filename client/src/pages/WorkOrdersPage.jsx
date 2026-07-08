@@ -23,7 +23,7 @@ const emptyForm = {
 };
 
 export default function WorkOrdersPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, can } = useAuth();
   const [workOrders, setWorkOrders] = useState([]);
   const [sites, setSites] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -103,13 +103,15 @@ export default function WorkOrdersPage() {
             <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to create
             </Link>
+          ) : !can("workorders:create") ? (
+            <span className="text-sm text-slate-500">Sign in to create work orders</span>
           ) : null
         }
       />
 
       <ErrorBanner message={error} />
 
-      {isAuthenticated ? (
+      {isAuthenticated && can("workorders:create") ? (
         <form className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
           <FormField label="Title" name="title" value={form.title} onChange={updateField} required />
           <FormField
