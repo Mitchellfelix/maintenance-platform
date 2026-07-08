@@ -7,3 +7,4 @@ server/tests/.db-available
 server/coverage/
 *.log
 .DS_Store
+.maintenance-platform.pid
