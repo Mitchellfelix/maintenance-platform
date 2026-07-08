@@ -15,6 +15,7 @@ const workOrdersDelete = [auth, requirePermission("workorders:delete")];
 const usersRead = [auth, requirePermission("users:read")];
 const usersUpdate = [auth, requirePermission("users:update")];
 const workOrdersAssign = [auth, requirePermission("workorders:assign")];
+const auditRead = [auth, requirePermission("audit:read")];
 
 module.exports = {
   anyAuth,
@@ -28,4 +29,5 @@ module.exports = {
   usersRead,
   usersUpdate,
   workOrdersAssign,
+  auditRead,
 };

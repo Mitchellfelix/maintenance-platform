@@ -9,6 +9,7 @@ import { ROLES, getRoleLabel } from "../lib/permissions.js";
 export default function UsersAdminPage() {
   const { can } = useAuth();
   const [users, setUsers] = useState([]);
+  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingId, setSavingId] = useState("");
@@ -17,8 +18,12 @@ export default function UsersAdminPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await api.get("/api/users");
-      setUsers(response.data);
+      const [usersResponse, sitesResponse] = await Promise.all([
+        api.get("/api/users"),
+        api.get("/api/sites"),
+      ]);
+      setUsers(usersResponse.data);
+      setSites(sitesResponse.data);
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load users"));
     } finally {
@@ -45,6 +50,28 @@ export default function UsersAdminPage() {
     }
   }
 
+  async function handleSiteAccessChange(userId, siteId, checked) {
+    const user = users.find((entry) => entry.id === userId);
+    if (!user) return;
+
+    const nextSiteIds = checked
+      ? [...(user.siteIds || []), siteId]
+      : (user.siteIds || []).filter((id) => id !== siteId);
+
+    setSavingId(userId);
+    setError("");
+    try {
+      await api.put(`/api/users/${userId}/sites`, { siteIds: nextSiteIds });
+      setUsers((current) =>
+        current.map((entry) => (entry.id === userId ? { ...entry, siteIds: nextSiteIds } : entry)),
+      );
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to update site access"));
+    } finally {
+      setSavingId("");
+    }
+  }
+
   if (!can("users:read")) {
     return <ErrorBanner message="You do not have access to user management." />;
   }
@@ -53,7 +80,7 @@ export default function UsersAdminPage() {
     <div className="space-y-6">
       <PageHeader
         title="User access"
-        description="Assign Admin, Operator, Technician, or Requester roles."
+        description="Assign Admin, Operator, Technician, or Requester roles. Operators can be scoped to specific sites."
       />
       <ErrorBanner message={error} />
       {loading ? <LoadingState label="Loading users..." /> : null}
@@ -65,11 +92,12 @@ export default function UsersAdminPage() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Role</th>
+                <th className="px-4 py-3">Site access</th>
               </tr>
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-t border-slate-100">
+                <tr key={user.id} className="border-t border-slate-100 align-top">
                   <td className="px-4 py-3 font-medium">{user.name || "—"}</td>
                   <td className="px-4 py-3 text-slate-600">{user.email}</td>
                   <td className="px-4 py-3">
@@ -85,6 +113,31 @@ export default function UsersAdminPage() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    {user.role === "MANAGER" ? (
+                      <div className="flex flex-col gap-2">
+                        {sites.length === 0 ? (
+                          <span className="text-slate-500">No sites available</span>
+                        ) : (
+                          sites.map((site) => (
+                            <label key={site.id} className="flex items-center gap-2 text-slate-700">
+                              <input
+                                type="checkbox"
+                                checked={(user.siteIds || []).includes(site.id)}
+                                disabled={savingId === user.id}
+                                onChange={(event) =>
+                                  handleSiteAccessChange(user.id, site.id, event.target.checked)
+                                }
+                              />
+                              {site.name}
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

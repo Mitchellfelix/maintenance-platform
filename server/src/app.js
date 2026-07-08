@@ -9,6 +9,7 @@ const siteRoutes = require("./routes/sites");
 const assetRoutes = require("./routes/assets");
 const workOrderRoutes = require("./routes/workorders");
 const userRoutes = require("./routes/users");
+const auditRoutes = require("./routes/audit");
 
 function createApp() {
   const app = express();
@@ -19,6 +20,7 @@ function createApp() {
 
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);
+  app.use("/api/audit-logs", auditRoutes);
   app.use("/api/sites", siteRoutes);
   app.use("/api/assets", assetRoutes);
   app.use("/api/workorders", workOrderRoutes);

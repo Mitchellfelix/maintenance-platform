@@ -29,6 +29,7 @@ router.get("/api", (req, res) => {
       "/api/users",
       "/api/users/assignees",
       "/api/users/roles",
+      "/api/audit-logs",
       "/api/sites",
       "/api/assets",
       "/api/workorders",

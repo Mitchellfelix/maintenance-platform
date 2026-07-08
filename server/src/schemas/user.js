@@ -5,4 +5,8 @@ const updateUserRoleSchema = z.object({
   role: z.enum(ROLES),
 });
 
-module.exports = { updateUserRoleSchema };
+const updateUserSitesSchema = z.object({
+  siteIds: z.array(z.string().min(1)),
+});
+
+module.exports = { updateUserRoleSchema, updateUserSitesSchema };

@@ -37,6 +37,9 @@ const PERMISSIONS = {
   // Users (admin only)
   "users:read": ["ADMIN"],
   "users:update": ["ADMIN"],
+
+  // Audit (admin only)
+  "audit:read": ["ADMIN"],
 };
 
 function hasPermission(role, permission) {

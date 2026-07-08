@@ -2,9 +2,11 @@ const express = require("express");
 const prisma = require("../lib/prisma");
 const validate = require("../middleware/validate");
 const { usersRead, usersUpdate, workOrdersAssign } = require("../middleware/routeGuards");
-const { updateUserRoleSchema } = require("../schemas/user");
+const { updateUserRoleSchema, updateUserSitesSchema } = require("../schemas/user");
 const { ROLES, ROLE_LABELS, canManageRole } = require("../lib/permissions");
 const { sanitizeUser } = require("../services/authService");
+const { recordAudit } = require("../services/auditService");
+const { setUserSiteAccess } = require("../services/siteAccessService");
 
 const router = express.Router();
 
@@ -31,9 +33,39 @@ router.get("/", ...usersRead, async (req, res, next) => {
   try {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
-      select: { id: true, email: true, name: true, role: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        siteAccess: { select: { siteId: true } },
+      },
     });
-    res.json(users);
+
+    res.json(
+      users.map((user) => ({
+        ...user,
+        siteIds: user.siteAccess.map((access) => access.siteId),
+        siteAccess: undefined,
+      })),
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/:id/sites", ...usersUpdate, validate(updateUserSitesSchema), async (req, res, next) => {
+  try {
+    const existing = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!existing) return res.status(404).json({ error: "User not found" });
+    if (existing.role !== "MANAGER") {
+      return res.status(400).json({ error: "Site access can only be assigned to Operators" });
+    }
+
+    await setUserSiteAccess(req.params.id, req.validated.siteIds, req.user.id);
+    res.json({ siteIds: req.validated.siteIds });
   } catch (error) {
     next(error);
   }
@@ -57,6 +89,14 @@ router.patch("/:id", ...usersUpdate, validate(updateUserRoleSchema), async (req,
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: { role },
+    });
+
+    await recordAudit({
+      action: "user.role.updated",
+      entityType: "user",
+      entityId: user.id,
+      actorId: req.user.id,
+      metadata: { from: existing.role, to: role, email: user.email },
     });
 
     res.json(sanitizeUser(user));

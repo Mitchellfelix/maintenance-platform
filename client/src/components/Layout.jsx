@@ -7,6 +7,7 @@ const navItems = [
   { to: "/assets", label: "Assets" },
   { to: "/workorders", label: "Work Orders" },
   { to: "/admin/users", label: "User access", permission: "users:read" },
+  { to: "/admin/audit", label: "Audit log", permission: "audit:read" },
 ];
 
 function navClassName({ isActive }) {

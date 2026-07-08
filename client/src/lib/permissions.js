@@ -25,6 +25,7 @@ const PERMISSIONS = {
   "workorders:assign": ["ADMIN", "MANAGER"],
   "users:read": ["ADMIN"],
   "users:update": ["ADMIN"],
+  "audit:read": ["ADMIN"],
 };
 
 export function hasPermission(role, permission) {

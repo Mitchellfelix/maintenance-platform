@@ -11,6 +11,7 @@ import WorkOrderDetailPage from "./pages/WorkOrderDetailPage.jsx";
 import WorkOrdersPage from "./pages/WorkOrdersPage.jsx";
 import PermissionRoute from "./components/PermissionRoute.jsx";
 import UsersAdminPage from "./pages/UsersAdminPage.jsx";
+import AuditLogPage from "./pages/AuditLogPage.jsx";
 
 export default function App() {
   return (
@@ -30,6 +31,14 @@ export default function App() {
               element={
                 <PermissionRoute permission="users:read">
                   <UsersAdminPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/admin/audit"
+              element={
+                <PermissionRoute permission="audit:read">
+                  <AuditLogPage />
                 </PermissionRoute>
               }
             />

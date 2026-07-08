@@ -54,6 +54,8 @@ model User {
   workOrdersRequested WorkOrder[]     @relation("WorkOrderRequester")
   workOrdersAssigned  WorkOrder[]     @relation("WorkOrderAssignee")
   workOrderNotes      WorkOrderNote[]
+  siteAccess          SiteAccess[]
+  auditLogs           AuditLog[]      @relation("AuditActor")
 }
 
 // ——— Locations & equipment ———
@@ -67,6 +69,7 @@ model Site {
 
   assets     Asset[]
   workOrders WorkOrder[]
+  siteAccess SiteAccess[]
 }
 
 model Asset {
@@ -138,4 +141,34 @@ model WorkOrderNote {
 
   @@index([workOrderId])
   @@index([authorId])
+}
+
+// ——— Access control & audit ———
+
+model SiteAccess {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, siteId])
+  @@index([userId])
+  @@index([siteId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String?
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
 }
