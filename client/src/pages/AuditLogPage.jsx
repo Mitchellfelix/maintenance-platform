@@ -56,9 +56,9 @@ export default function AuditLogPage() {
       <ErrorBanner message={error} />
       {loading ? <LoadingState label="Loading audit log..." /> : null}
       {!loading ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 shadow-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Action</th>

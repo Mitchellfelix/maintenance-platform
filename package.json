@@ -10,7 +10,12 @@
     "test": "npm test --workspace server",
     "test:coverage": "npm run test:coverage --workspace server",
     "db:deploy": "npm run db:deploy --workspace server",
-    "db:migrate": "npm run db:migrate --workspace server"
+    "db:migrate": "npm run db:migrate --workspace server",
+    "app:create": "bash scripts/create-desktop-app.sh",
+    "app:install": "bash scripts/install-app.sh",
+    "app:desktop": "bash scripts/run-desktop.sh",
+    "app:launch": "bash scripts/run-desktop.sh",
+    "app:stop": "bash scripts/stop-app.sh"
   },
   "workspaces": [
     "client",
@@ -18,5 +23,8 @@
   ],
   "engines": {
     "node": ">=20.10.0"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0"
   }
 }

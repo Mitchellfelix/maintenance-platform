@@ -112,7 +112,7 @@ export default function WorkOrdersPage() {
       <ErrorBanner message={error} />
 
       {isAuthenticated && can("workorders:create") ? (
-        <form className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
+        <form className="mb-6 grid gap-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
           <FormField label="Title" name="title" value={form.title} onChange={updateField} required />
           <FormField
             label="Priority"

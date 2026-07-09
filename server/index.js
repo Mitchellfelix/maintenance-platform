@@ -12,7 +12,7 @@ async function start() {
   await verifyDatabaseConnection();
 
   server = app.listen(PORT, () => {
-    console.log(`Maintenance Platform running on http://localhost:${PORT}`);
+    console.log(`EMAT Tracking Database running on http://localhost:${PORT}`);
   });
 }
 

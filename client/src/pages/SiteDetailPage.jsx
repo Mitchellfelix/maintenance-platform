@@ -84,7 +84,7 @@ export default function SiteDetailPage() {
       <ErrorBanner message={error} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
           <h3 className="text-lg font-semibold">Linked records</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
@@ -99,7 +99,7 @@ export default function SiteDetailPage() {
         </section>
 
         {isAuthenticated && can("sites:write") ? (
-          <form className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSave}>
+          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit site</h3>
             <FormField label="Site name" name="name" value={form.name} onChange={updateField} required />
             <FormField label="Address" name="address" value={form.address} onChange={updateField} />
@@ -124,11 +124,11 @@ export default function SiteDetailPage() {
             </div>
           </form>
         ) : (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
             <p className="text-sm text-slate-500">
               {!isAuthenticated
                 ? "Sign in to edit or delete this site."
-                : "Operator access is required to edit sites."}
+                : "Ops Lead or Operator access is required to edit sites."}
             </p>
             {!isAuthenticated ? (
               <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">

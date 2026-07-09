@@ -10,10 +10,14 @@ function getApp() {
 }
 
 async function resetDatabase() {
+  await prisma.accessRequest.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.siteAccess.deleteMany();
   await prisma.workOrderNote.deleteMany();
   await prisma.workOrder.deleteMany();
+  await prisma.inventoryPart.deleteMany();
+  await prisma.sopVersion.deleteMany();
+  await prisma.sopDocument.deleteMany();
   await prisma.asset.deleteMany();
   await prisma.site.deleteMany();
   await prisma.user.deleteMany();
@@ -34,27 +38,23 @@ async function registerUser(app, overrides = {}) {
     return { response: registerResponse, payload };
   }
 
-  if (role !== "REQUESTER") {
-    await prisma.user.update({
-      where: { email: payload.email },
-      data: { role },
-    });
+  await prisma.user.update({
+    where: { email: payload.email },
+    data: { role, status: "ACTIVE" },
+  });
 
-    const loginResponse = await request(app).post("/api/auth/login").send({
-      email: payload.email,
-      password: payload.password,
-    });
+  const loginResponse = await request(app).post("/api/auth/login").send({
+    email: payload.email,
+    password: payload.password,
+  });
 
-    return {
-      response: {
-        status: loginResponse.status,
-        body: loginResponse.body,
-      },
-      payload,
-    };
-  }
-
-  return { response: registerResponse, payload };
+  return {
+    response: {
+      status: loginResponse.status,
+      body: loginResponse.body,
+    },
+    payload,
+  };
 }
 
 async function createSite(app, token, overrides = {}) {

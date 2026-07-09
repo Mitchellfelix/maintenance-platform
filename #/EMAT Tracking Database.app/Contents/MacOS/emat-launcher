@@ -1,0 +1,3 @@
+#!/bin/bash
+export EMAT_PORT=3000
+exec "/Users/nataniel.diaz/maintenance-platform/scripts/run-desktop.sh"

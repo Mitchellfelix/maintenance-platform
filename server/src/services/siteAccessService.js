@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const { isSiteScopedRole } = require("../lib/permissions");
 
 const NO_ACCESS_PLACEHOLDER = "__no_site_access__";
 
@@ -7,7 +8,7 @@ async function getAccessibleSiteIds(user) {
     return null;
   }
 
-  if (user.role === "MANAGER") {
+  if (isSiteScopedRole(user.role)) {
     const rows = await prisma.siteAccess.findMany({
       where: { userId: user.id },
       select: { siteId: true },
@@ -43,7 +44,7 @@ async function assertSiteAccess(user, siteId) {
     return;
   }
 
-  if (user.role === "MANAGER") {
+  if (isSiteScopedRole(user.role)) {
     const siteIds = await getAccessibleSiteIds(user);
     if (!siteIds.includes(siteId)) {
       throw Object.assign(new Error("Forbidden"), {

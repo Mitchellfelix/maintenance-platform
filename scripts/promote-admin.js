@@ -16,7 +16,7 @@ async function main() {
 
   const user = await prisma.user.update({
     where: { email },
-    data: { role: "ADMIN" },
+    data: { role: "ADMIN", status: "ACTIVE" },
   });
 
   console.log(`Promoted ${user.email} to ADMIN. Sign out and back in to refresh your session.`);

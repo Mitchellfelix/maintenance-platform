@@ -32,17 +32,20 @@ export default function AssetDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [inventoryParts, setInventoryParts] = useState([]);
 
   async function loadAsset() {
     setLoading(true);
     setError("");
     try {
-      const [assetResponse, sitesResponse] = await Promise.all([
+      const [assetResponse, sitesResponse, inventoryResponse] = await Promise.all([
         api.get(`/api/assets/${id}`),
         api.get("/api/sites"),
+        api.get(`/api/inventory?assetId=${id}`),
       ]);
       setAsset(assetResponse.data);
       setSites(sitesResponse.data);
+      setInventoryParts(inventoryResponse.data);
       setForm({
         siteId: assetResponse.data.siteId,
         name: assetResponse.data.name,
@@ -117,7 +120,7 @@ export default function AssetDetailPage() {
       <ErrorBanner message={error} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
           <h3 className="text-lg font-semibold">Details</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
@@ -137,7 +140,7 @@ export default function AssetDetailPage() {
         </section>
 
         {isAuthenticated && can("assets:write") ? (
-          <form className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSave}>
+          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit asset</h3>
             <FormField
               label="Site"
@@ -185,11 +188,11 @@ export default function AssetDetailPage() {
             </div>
           </form>
         ) : (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
             <p className="text-sm text-slate-500">
               {!isAuthenticated
                 ? "Sign in to edit or delete this asset."
-                : "Operator access is required to edit assets."}
+                : "Ops Lead or Operator access is required to edit assets."}
             </p>
             {!isAuthenticated ? (
               <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
@@ -199,6 +202,46 @@ export default function AssetDetailPage() {
           </section>
         )}
       </div>
+
+      <section className="mt-6 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold">Inventory parts</h3>
+          <Link
+            to={`/inventory?assetId=${id}`}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
+          >
+            Manage inventory
+          </Link>
+        </div>
+        {inventoryParts.length === 0 ? (
+          <p className="mt-4 text-sm text-slate-500">No parts recorded for this unit yet.</p>
+        ) : (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-100">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Part number</th>
+                  <th className="px-4 py-3">Location</th>
+                  <th className="px-4 py-3">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventoryParts.map((part) => (
+                  <tr key={part.id} className="border-t border-slate-100">
+                    <td className="px-4 py-3">
+                      <Link to={`/inventory/${part.id}`} className="font-medium text-emerald-700 hover:underline">
+                        {part.partNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{part.location}</td>
+                    <td className="px-4 py-3 text-slate-600">{part.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

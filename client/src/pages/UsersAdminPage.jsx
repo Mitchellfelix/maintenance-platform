@@ -4,7 +4,8 @@ import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
-import { ROLES, getRoleLabel } from "../lib/permissions.js";
+import RoleSelect from "../components/RoleSelect.jsx";
+import { ROLES, isSiteScopedRole } from "../lib/permissions.js";
 
 export default function UsersAdminPage() {
   const { can } = useAuth();
@@ -80,17 +81,18 @@ export default function UsersAdminPage() {
     <div className="space-y-6">
       <PageHeader
         title="User access"
-        description="Assign Admin, Operator, Technician, or Requester roles. Operators can be scoped to specific sites."
+        description="Assign Admin, Ops Lead, Operator, or Requester roles. Ops Leads and Operators can be scoped to specific sites."
       />
       <ErrorBanner message={error} />
       {loading ? <LoadingState label="Loading users..." /> : null}
       {!loading ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 shadow-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Site access</th>
               </tr>
@@ -101,21 +103,29 @@ export default function UsersAdminPage() {
                   <td className="px-4 py-3 font-medium">{user.name || "—"}</td>
                   <td className="px-4 py-3 text-slate-600">{user.email}</td>
                   <td className="px-4 py-3">
-                    <select
-                      className="rounded-xl border border-slate-200 px-3 py-2"
-                      value={user.role}
-                      disabled={savingId === user.id}
-                      onChange={(event) => handleRoleChange(user.id, event.target.value)}
+                    <span
+                      className={[
+                        "inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+                        user.status === "ACTIVE"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : "bg-amber-100 text-amber-800",
+                      ].join(" ")}
                     >
-                      {ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {getRoleLabel(role)}
-                        </option>
-                      ))}
-                    </select>
+                      {user.status?.toLowerCase() || "active"}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
-                    {user.role === "MANAGER" ? (
+                    <RoleSelect
+                      name={`role-${user.id}`}
+                      value={user.role}
+                      onChange={(event) => handleRoleChange(user.id, event.target.value)}
+                      roles={ROLES}
+                      disabled={savingId === user.id}
+                      showDescription={false}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    {isSiteScopedRole(user.role) ? (
                       <div className="flex flex-col gap-2">
                         {sites.length === 0 ? (
                           <span className="text-slate-500">No sites available</span>

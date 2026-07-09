@@ -16,13 +16,37 @@ describeIfDb("auth routes", () => {
 
   setupDbHooks();
 
-  it("registers a user and returns a token", async () => {
+  it("registers a user and returns a token when tests activate the account", async () => {
     const { response } = await registerUser(app);
 
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(200);
     expect(response.body.token).toBeTruthy();
     expect(response.body.user.email).toMatch(/@example.com$/);
     expect(response.body.user.password).toBeUndefined();
+  });
+
+  it("creates pending accounts that cannot sign in until approved", async () => {
+    await registerUser(app, { role: "ADMIN" });
+
+    const registerResponse = await request(app).post("/api/auth/register").send({
+      email: "pending@example.com",
+      password: "password123",
+      name: "Pending User",
+      requestedRole: "REQUESTER",
+      reason: "Need access to the platform",
+    });
+
+    expect(registerResponse.status).toBe(201);
+    expect(registerResponse.body.pendingApproval).toBe(true);
+    expect(registerResponse.body.token).toBeUndefined();
+
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "pending@example.com",
+      password: "password123",
+    });
+
+    expect(loginResponse.status).toBe(403);
+    expect(loginResponse.body.error).toMatch(/pending admin approval/i);
   });
 
   it("logs in with valid credentials", async () => {

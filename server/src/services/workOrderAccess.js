@@ -2,14 +2,14 @@ const { hasPermission } = require("../lib/permissions");
 
 function canEditWorkOrder(user, workOrder) {
   if (!user || !workOrder) return false;
-  if (user.role === "ADMIN" || user.role === "MANAGER") return true;
-  if (user.role === "TECHNICIAN" && workOrder.assigneeId === user.id) return true;
+  if (user.role === "ADMIN" || user.role === "OPS_LEAD") return true;
+  if (user.role === "OPERATOR" && workOrder.assigneeId === user.id) return true;
   if (user.role === "REQUESTER" && workOrder.requesterId === user.id) return true;
   return false;
 }
 
 function filterWorkOrderUpdate(user, updates) {
-  if (user.role === "ADMIN" || user.role === "MANAGER") {
+  if (user.role === "ADMIN" || user.role === "OPS_LEAD") {
     return updates;
   }
 

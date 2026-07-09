@@ -1,0 +1,45 @@
+#!/bin/bash
+# EMAT CLI — launch from anywhere after: npm run app:install
+set -euo pipefail
+
+_script_dir() {
+  local src="${BASH_SOURCE[0]}"
+  while [[ -L "$src" ]]; do
+    local dir
+    dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  cd -P "$(dirname "$src")" && pwd
+}
+
+LIB="$(_script_dir)/lib"
+# shellcheck source=lib/emat-home.sh
+source "$LIB/emat-home.sh"
+
+ROOT="$(emat_require_home)"
+CMD="${1:-launch}"
+
+case "$CMD" in
+  launch | start | open)
+    exec "$ROOT/scripts/run-desktop.sh"
+    ;;
+  stop)
+    exec "$ROOT/scripts/stop-app.sh"
+    ;;
+  build)
+    cd "$ROOT"
+    exec npm run build
+    ;;
+  install)
+    exec "$ROOT/scripts/install-app.sh"
+    ;;
+  *)
+    echo "Usage: emat [launch|stop|build|install]" >&2
+    echo "  launch  Open EMAT desktop app (default)" >&2
+    echo "  stop    Stop background server" >&2
+    echo "  build   Rebuild UI + server" >&2
+    echo "  install Re-run Dock + PATH setup" >&2
+    exit 1
+    ;;
+esac

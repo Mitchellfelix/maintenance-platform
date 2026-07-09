@@ -6,14 +6,20 @@ const navItems = [
   { to: "/sites", label: "Sites" },
   { to: "/assets", label: "Assets" },
   { to: "/workorders", label: "Work Orders" },
+  { to: "/inventory", label: "Inventory" },
+  { to: "/sops", label: "Department SOPs" },
+  { to: "/access/request", label: "Request access", requiresAuth: true },
   { to: "/admin/users", label: "User access", permission: "users:read" },
+  { to: "/admin/access-requests", label: "Access requests", permission: "access-requests:read" },
   { to: "/admin/audit", label: "Audit log", permission: "audit:read" },
 ];
 
 function navClassName({ isActive }) {
   return [
-    "rounded-xl px-3 py-2 text-sm font-medium transition",
-    isActive ? "bg-emerald-500 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
+    "rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 ease-out",
+    isActive
+      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30"
+      : "text-slate-300 hover:translate-x-0.5 hover:bg-white/10 hover:text-white",
   ].join(" ");
 }
 
@@ -21,27 +27,35 @@ export default function Layout() {
   const { user, logout, isAuthenticated, can, roleLabel } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
-        <aside className="flex shrink-0 flex-col gap-6 rounded-3xl bg-slate-950 p-6 text-white shadow-lg lg:w-64">
+    <div className="relative min-h-screen overflow-hidden bg-slate-300 text-slate-950">
+      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-300/35" />
+      <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-200/30 [animation-delay:-4s]" />
+      <div className="flow-orb bottom-0 left-1/3 h-72 w-72 bg-teal-200/25 [animation-delay:-8s]" />
+
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
+        <aside className="flex shrink-0 flex-col gap-6 rounded-[2rem] border border-white/10 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 p-6 text-white shadow-2xl shadow-slate-900/25 lg:w-64">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">
-              Maintenance Platform
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300/90">
+              EMAT Tracking Database
             </p>
-            <h1 className="mt-2 text-2xl font-bold">Operations</h1>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight">Navy Sustainment</h1>
           </div>
 
-          <nav className="flex flex-col gap-1">
+          <nav className="flex flex-col gap-1.5">
             {navItems
-              .filter((item) => !item.permission || can(item.permission))
+              .filter((item) => {
+                if (item.permission && !can(item.permission)) return false;
+                if (item.requiresAuth && !isAuthenticated) return false;
+                return true;
+              })
               .map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.end} className={navClassName}>
-                {item.label}
-              </NavLink>
-            ))}
+                <NavLink key={item.to} to={item.to} end={item.end} className={navClassName}>
+                  {item.label}
+                </NavLink>
+              ))}
           </nav>
 
-          <div className="mt-auto rounded-2xl bg-white/5 p-4">
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             {isAuthenticated ? (
               <>
                 <p className="text-sm font-medium">{user?.name || user?.email}</p>
@@ -49,7 +63,7 @@ export default function Layout() {
                 <button
                   type="button"
                   onClick={logout}
-                  className="mt-4 w-full rounded-xl border border-white/10 px-3 py-2 text-sm hover:bg-white/10"
+                  className="mt-4 w-full rounded-xl border border-white/10 px-3 py-2 text-sm transition-all duration-300 hover:bg-white/10"
                 >
                   Sign out
                 </button>
@@ -59,7 +73,7 @@ export default function Layout() {
                 <p className="text-sm text-slate-300">Sign in to create and edit records.</p>
                 <NavLink
                   to="/login"
-                  className="mt-4 inline-flex w-full justify-center rounded-xl bg-emerald-500 px-3 py-2 text-sm font-medium text-white"
+                  className="mt-4 inline-flex w-full justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-2 text-sm font-medium text-white shadow-md shadow-emerald-500/25 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/30"
                 >
                   Sign in
                 </NavLink>
@@ -68,7 +82,7 @@ export default function Layout() {
           </div>
         </aside>
 
-        <main className="flex-1">
+        <main className="flow-page flex-1">
           <Outlet />
         </main>
       </div>

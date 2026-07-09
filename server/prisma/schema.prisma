@@ -13,9 +13,14 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  MANAGER
-  TECHNICIAN
+  OPS_LEAD
+  OPERATOR
   REQUESTER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
 }
 
 enum WorkOrderStatus {
@@ -40,6 +45,13 @@ enum AssetOperationalStatus {
   DECOMMISSIONED
 }
 
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 // ——— Auth & people ———
 
 model User {
@@ -47,8 +59,9 @@ model User {
   email     String   @unique
   password  String
   name      String?
-  role      UserRole @default(REQUESTER)
-  createdAt DateTime @default(now())
+  role      UserRole   @default(REQUESTER)
+  status    UserStatus @default(PENDING)
+  createdAt DateTime   @default(now())
   updatedAt DateTime @updatedAt
 
   workOrdersRequested WorkOrder[]     @relation("WorkOrderRequester")
@@ -56,6 +69,9 @@ model User {
   workOrderNotes      WorkOrderNote[]
   siteAccess          SiteAccess[]
   auditLogs           AuditLog[]      @relation("AuditActor")
+  accessRequests      AccessRequest[] @relation("AccessRequestRequester")
+  accessReviews       AccessRequest[] @relation("AccessRequestReviewer")
+  sopVersionsPublished SopVersion[]   @relation("SopVersionPublisher")
 }
 
 // ——— Locations & equipment ———
@@ -85,6 +101,7 @@ model Asset {
   updatedAt           DateTime                 @updatedAt
 
   workOrders WorkOrder[]
+  inventoryParts InventoryPart[]
 
   @@index([siteId])
   @@index([operationalStatus])
@@ -170,5 +187,79 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([actorId])
+  @@index([createdAt])
+}
+
+model AccessRequest {
+  id               String              @id @default(cuid())
+  requesterId      String
+  requester        User                @relation("AccessRequestRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  status           AccessRequestStatus @default(PENDING)
+  requestedRole    UserRole
+  requestedSiteIds Json?
+  reason           String?
+  reviewerId       String?
+  reviewer         User?               @relation("AccessRequestReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewNote       String?
+  reviewedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([requesterId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ——— Inventory ———
+
+model InventoryPart {
+  id          String   @id @default(cuid())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  partNumber  String
+  location    String
+  description String?
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([assetId])
+  @@index([partNumber])
+}
+
+// ——— Department SOPs ———
+
+model SopDocument {
+  id          String       @id @default(cuid())
+  title       String
+  department  String
+  summary     String?
+  content     String?
+  documentUrl String?
+  version     String       @default("1.0")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  versions    SopVersion[]
+
+  @@index([department])
+  @@index([title])
+}
+
+model SopVersion {
+  id           String      @id @default(cuid())
+  sopId        String
+  sop          SopDocument @relation(fields: [sopId], references: [id], onDelete: Cascade)
+  version      String
+  title        String
+  department   String
+  summary      String?
+  content      String?
+  documentUrl  String?
+  changeNote   String?
+  publishedById String?
+  publishedBy  User?       @relation("SopVersionPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime    @default(now())
+
+  @@index([sopId])
   @@index([createdAt])
 }

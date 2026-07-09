@@ -30,8 +30,11 @@ router.get("/api", (req, res) => {
       "/api/users/assignees",
       "/api/users/roles",
       "/api/audit-logs",
+      "/api/access-requests",
+      "/api/access-requests/mine",
       "/api/sites",
       "/api/assets",
+      "/api/inventory",
       "/api/workorders",
     ],
   });

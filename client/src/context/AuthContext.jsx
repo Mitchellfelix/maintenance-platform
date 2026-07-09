@@ -45,11 +45,14 @@ export function AuthProvider({ children }) {
     return response.data.user;
   }, []);
 
-  const register = useCallback(async (email, password, name) => {
-    const response = await api.post("/api/auth/register", { email, password, name });
+  const register = useCallback(async (payload) => {
+    const response = await api.post("/api/auth/register", payload);
+    if (response.data.pendingApproval) {
+      return response.data;
+    }
     setStoredToken(response.data.token);
     setUser(response.data.user);
-    return response.data.user;
+    return response.data;
   }, []);
 
   const can = useCallback(

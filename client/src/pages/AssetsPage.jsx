@@ -90,7 +90,7 @@ export default function AssetsPage() {
               Sign in to create
             </Link>
           ) : !can("assets:write") ? (
-            <span className="text-sm text-slate-500">Operator access required to create</span>
+            <span className="text-sm text-slate-500">Ops Lead or Operator access required to create</span>
           ) : null
         }
       />
@@ -98,7 +98,7 @@ export default function AssetsPage() {
       <ErrorBanner message={error} />
 
       {isAuthenticated && can("assets:write") ? (
-        <form className="mb-6 grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
+        <form className="mb-6 grid gap-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
           <FormField
             label="Site"
             name="siteId"

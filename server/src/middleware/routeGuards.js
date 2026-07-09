@@ -9,6 +9,8 @@ const sitesWrite = [auth, requirePermission("sites:write")];
 const sitesDelete = [auth, requirePermission("sites:delete")];
 const assetsWrite = [auth, requirePermission("assets:write")];
 const assetsDelete = [auth, requirePermission("assets:delete")];
+const inventoryWrite = [auth, requirePermission("inventory:write")];
+const inventoryDelete = [auth, requirePermission("inventory:delete")];
 const workOrdersCreate = [auth, requirePermission("workorders:create")];
 const workOrdersUpdate = [auth, requirePermission("workorders:update")];
 const workOrdersDelete = [auth, requirePermission("workorders:delete")];
@@ -16,6 +18,10 @@ const usersRead = [auth, requirePermission("users:read")];
 const usersUpdate = [auth, requirePermission("users:update")];
 const workOrdersAssign = [auth, requirePermission("workorders:assign")];
 const auditRead = [auth, requirePermission("audit:read")];
+const accessRequestsRead = [auth, requirePermission("access-requests:read")];
+const accessRequestsReview = [auth, requirePermission("access-requests:review")];
+const sopsWrite = [auth, requirePermission("sops:write")];
+const sopsDelete = [auth, requirePermission("sops:delete")];
 
 module.exports = {
   anyAuth,
@@ -23,6 +29,8 @@ module.exports = {
   sitesDelete,
   assetsWrite,
   assetsDelete,
+  inventoryWrite,
+  inventoryDelete,
   workOrdersCreate,
   workOrdersUpdate,
   workOrdersDelete,
@@ -30,4 +38,8 @@ module.exports = {
   usersUpdate,
   workOrdersAssign,
   auditRead,
+  accessRequestsRead,
+  accessRequestsReview,
+  sopsWrite,
+  sopsDelete,
 };

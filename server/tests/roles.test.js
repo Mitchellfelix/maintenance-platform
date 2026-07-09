@@ -29,8 +29,20 @@ describeIfDb("role-based access control", () => {
     expect(siteResponse.body.error).toBe("Forbidden");
   });
 
-  it("allows MANAGER (Operator) to create sites", async () => {
-    const { response } = await registerUser(app, { role: "MANAGER" });
+  it("allows OPS_LEAD to create sites", async () => {
+    const { response } = await registerUser(app, { role: "OPS_LEAD" });
+    const token = response.body.token;
+
+    const siteResponse = await request(app)
+      .post("/api/sites")
+      .set(authHeader(token))
+      .send({ name: "Ops Lead Site" });
+
+    expect(siteResponse.status).toBe(201);
+  });
+
+  it("allows OPERATOR to create sites", async () => {
+    const { response } = await registerUser(app, { role: "OPERATOR" });
     const token = response.body.token;
 
     const siteResponse = await request(app)
@@ -58,14 +70,14 @@ describeIfDb("role-based access control", () => {
     const patchResponse = await request(app)
       .patch(`/api/users/${targetId}`)
       .set(authHeader(adminToken))
-      .send({ role: "TECHNICIAN" });
+      .send({ role: "OPERATOR" });
 
     expect(patchResponse.status).toBe(200);
-    expect(patchResponse.body.role).toBe("TECHNICIAN");
+    expect(patchResponse.body.role).toBe("OPERATOR");
   });
 
-  it("allows operators to list assignees", async () => {
-    const { response } = await registerUser(app, { role: "MANAGER" });
+  it("allows ops leads to list assignees", async () => {
+    const { response } = await registerUser(app, { role: "OPS_LEAD" });
     const token = response.body.token;
 
     const assigneesResponse = await request(app)
@@ -77,7 +89,7 @@ describeIfDb("role-based access control", () => {
   });
 
   it("blocks non-admin from user management", async () => {
-    const { response } = await registerUser(app, { role: "MANAGER" });
+    const { response } = await registerUser(app, { role: "OPS_LEAD" });
     const token = response.body.token;
 
     const usersResponse = await request(app).get("/api/users").set(authHeader(token));

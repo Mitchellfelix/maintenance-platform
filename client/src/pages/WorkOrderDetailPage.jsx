@@ -163,7 +163,7 @@ export default function WorkOrderDetailPage() {
       <ErrorBanner message={error} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
           <h3 className="text-lg font-semibold">Timeline</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
@@ -191,7 +191,7 @@ export default function WorkOrderDetailPage() {
         </section>
 
         {isAuthenticated && editable ? (
-          <form className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSave}>
+          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit work order</h3>
             {fieldAccess.title ? (
               <FormField label="Title" name="title" value={form.title} onChange={updateField} required />
@@ -285,7 +285,7 @@ export default function WorkOrderDetailPage() {
             </div>
           </form>
         ) : (
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
             <p className="text-sm text-slate-500">
               {!isAuthenticated
                 ? "Sign in to edit this work order."

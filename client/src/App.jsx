@@ -10,8 +10,15 @@ import SitesPage from "./pages/SitesPage.jsx";
 import WorkOrderDetailPage from "./pages/WorkOrderDetailPage.jsx";
 import WorkOrdersPage from "./pages/WorkOrdersPage.jsx";
 import PermissionRoute from "./components/PermissionRoute.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import UsersAdminPage from "./pages/UsersAdminPage.jsx";
 import AuditLogPage from "./pages/AuditLogPage.jsx";
+import AccessRequestPage from "./pages/AccessRequestPage.jsx";
+import AccessRequestsAdminPage from "./pages/AccessRequestsAdminPage.jsx";
+import InventoryPage from "./pages/InventoryPage.jsx";
+import InventoryPartDetailPage from "./pages/InventoryPartDetailPage.jsx";
+import SopsPage from "./pages/SopsPage.jsx";
+import SopDetailPage from "./pages/SopDetailPage.jsx";
 
 export default function App() {
   return (
@@ -26,6 +33,18 @@ export default function App() {
             <Route path="/assets/:id" element={<AssetDetailPage />} />
             <Route path="/workorders" element={<WorkOrdersPage />} />
             <Route path="/workorders/:id" element={<WorkOrderDetailPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/inventory/:id" element={<InventoryPartDetailPage />} />
+            <Route path="/sops" element={<SopsPage />} />
+            <Route path="/sops/:id" element={<SopDetailPage />} />
+            <Route
+              path="/access/request"
+              element={
+                <ProtectedRoute>
+                  <AccessRequestPage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin/users"
               element={
@@ -39,6 +58,14 @@ export default function App() {
               element={
                 <PermissionRoute permission="audit:read">
                   <AuditLogPage />
+                </PermissionRoute>
+              }
+            />
+            <Route
+              path="/admin/access-requests"
+              element={
+                <PermissionRoute permission="access-requests:read">
+                  <AccessRequestsAdminPage />
                 </PermissionRoute>
               }
             />

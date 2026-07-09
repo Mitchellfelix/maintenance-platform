@@ -14,12 +14,15 @@ const toneByValue = {
   DEGRADED: "bg-amber-100 text-amber-800",
   OFFLINE: "bg-rose-100 text-rose-800",
   DECOMMISSIONED: "bg-slate-200 text-slate-700",
+  PENDING: "bg-amber-100 text-amber-800",
+  APPROVED: "bg-emerald-100 text-emerald-800",
+  REJECTED: "bg-rose-100 text-rose-800",
 };
 
 export default function StatusBadge({ value }) {
   const tone = toneByValue[value] || "bg-slate-100 text-slate-700";
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${tone}`}>
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ring-black/5 ${tone}`}>
       {statusLabel(value)}
     </span>
   );

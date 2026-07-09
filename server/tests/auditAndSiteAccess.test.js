@@ -9,7 +9,7 @@ const {
   authHeader,
 } = require("./helpers");
 
-describeIfDb("audit log and per-site operator access", () => {
+describeIfDb("audit log and per-site ops access", () => {
   let app;
 
   beforeAll(() => {
@@ -47,7 +47,7 @@ describeIfDb("audit log and per-site operator access", () => {
   });
 
   it("blocks non-admin from audit logs", async () => {
-    const { response } = await registerUser(app, { role: "MANAGER" });
+    const { response } = await registerUser(app, { role: "OPS_LEAD" });
     const token = response.body.token;
 
     const auditResponse = await request(app)
@@ -64,7 +64,7 @@ describeIfDb("audit log and per-site operator access", () => {
     const siteA = await createSite(app, adminToken, { name: "Site A" });
     const siteB = await createSite(app, adminToken, { name: "Site B" });
 
-    const { response: operatorResponse, payload } = await registerUser(app, { role: "MANAGER" });
+    const { response: operatorResponse, payload } = await registerUser(app, { role: "OPS_LEAD" });
     const operatorId = operatorResponse.body.user.id;
     const operatorToken = operatorResponse.body.token;
 
@@ -89,7 +89,7 @@ describeIfDb("audit log and per-site operator access", () => {
   });
 
   it("auto-grants site access when operator creates a site", async () => {
-    const { response } = await registerUser(app, { role: "MANAGER" });
+    const { response } = await registerUser(app, { role: "OPS_LEAD" });
     const token = response.body.token;
     const userId = response.body.user.id;
 
@@ -106,7 +106,7 @@ describeIfDb("audit log and per-site operator access", () => {
     const adminToken = adminResponse.body.token;
 
     const site = await createSite(app, adminToken, { name: "Assignable Site" });
-    const { response: operatorResponse } = await registerUser(app, { role: "MANAGER" });
+    const { response: operatorResponse } = await registerUser(app, { role: "OPS_LEAD" });
     const operatorId = operatorResponse.body.user.id;
 
     const updateResponse = await request(app)

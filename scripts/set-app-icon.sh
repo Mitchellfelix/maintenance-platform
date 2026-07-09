@@ -1,15 +1,15 @@
 #!/bin/bash
-# Build a macOS .icns icon from the project SVG and apply it to Maintenance Platform.app
+# Build a macOS .icns icon from the project SVG and apply it to EMAT Tracking Database.app
 #
 # Usage:
 #   ./scripts/set-app-icon.sh
-#   ./scripts/set-app-icon.sh ~/Desktop/Maintenance\ Platform.app
+#   ./scripts/set-app-icon.sh ~/Applications/EMAT\ Tracking\ Database.app
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SVG="$ROOT/client/public/icons/icon.svg"
-APP_PATH="${1:-$HOME/Desktop/Maintenance Platform.app}"
+APP_PATH="${1:-$ROOT/apps/EMAT Tracking Database.app}"
 WORK_DIR="$(mktemp -d)"
 ICONSET="$WORK_DIR/AppIcon.iconset"
 SOURCE_PNG="$WORK_DIR/icon-1024.png"

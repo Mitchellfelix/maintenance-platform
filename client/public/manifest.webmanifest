@@ -1,6 +1,6 @@
 {
-  "name": "Maintenance Platform",
-  "short_name": "Maintenance",
+  "name": "EMAT Tracking Database",
+  "short_name": "EMAT",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

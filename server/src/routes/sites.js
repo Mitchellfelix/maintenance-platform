@@ -5,6 +5,7 @@ const validate = require("../middleware/validate");
 const { sitesWrite, sitesDelete } = require("../middleware/routeGuards");
 const { createSiteSchema, updateSiteSchema } = require("../schemas/site");
 const { recordAudit } = require("../services/auditService");
+const { isSiteScopedRole } = require("../lib/permissions");
 const {
   getAccessibleSiteIds,
   buildSiteRecordFilter,
@@ -53,7 +54,7 @@ router.post("/", ...sitesWrite, validate(createSiteSchema), async (req, res, nex
       metadata: { name: site.name },
     });
 
-    if (req.user.role === "MANAGER") {
+    if (isSiteScopedRole(req.user.role)) {
       await prisma.siteAccess.upsert({
         where: { userId_siteId: { userId: req.user.id, siteId: site.id } },
         create: { userId: req.user.id, siteId: site.id },
