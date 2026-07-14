@@ -2,13 +2,6 @@ import axios from "axios";
 
 const TOKEN_KEY = "mp_token";
 
-// One-time cleanup: older builds kept the JWT in localStorage across launches.
-try {
-  localStorage.removeItem(TOKEN_KEY);
-} catch {
-  // ignore
-}
-
 export const api = axios.create({
   baseURL: "",
   headers: { "Content-Type": "application/json" },
@@ -22,10 +15,9 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/** Session-only auth: closing the app/tab clears the token (no stay-signed-in). */
 export function getStoredToken() {
   try {
-    return sessionStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -34,12 +26,12 @@ export function getStoredToken() {
 export function setStoredToken(token) {
   try {
     if (token) {
-      sessionStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(TOKEN_KEY, token);
     } else {
-      sessionStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(TOKEN_KEY);
     }
-    // Drop any legacy persisted sessions from earlier builds.
-    localStorage.removeItem(TOKEN_KEY);
+    // Clear any transient session token from the short-lived experiment.
+    sessionStorage.removeItem(TOKEN_KEY);
   } catch {
     // Ignore storage quota / private-mode failures.
   }
