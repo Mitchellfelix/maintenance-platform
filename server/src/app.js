@@ -17,7 +17,12 @@ const inventoryRoutes = require("./routes/inventory");
 const sopRoutes = require("./routes/sops");
 const greenTagRoutes = require("./routes/greentagging");
 const checklistRoutes = require("./routes/checklists");
-const { createJoinHandler, createReadyZipHandler, DOWNLOADS_DIR } = require("./routes/join");
+const {
+  createJoinHandler,
+  createInstallMacHandler,
+  createReadyZipHandler,
+  DOWNLOADS_DIR,
+} = require("./routes/join");
 const { ensureUploadDirs, UPLOAD_ROOT } = require("./lib/uploads");
 
 function createApp() {
@@ -33,8 +38,9 @@ function createApp() {
   app.get("/downloads/EMAT-ready.zip", createReadyZipHandler());
   app.use("/downloads", express.static(DOWNLOADS_DIR));
 
-  // Team invite page — before the SPA catch-all.
+  // Team invite page + one-line Mac install — before the SPA catch-all.
   app.get("/join", createJoinHandler());
+  app.get("/install-mac", createInstallMacHandler());
 
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);

@@ -127,17 +127,16 @@ Restart the host after editing env.
 ## Copy-paste handoff (send this to your team)
 
 ```text
-EMAT Tracking Database — download & play
+EMAT Tracking Database — join the team
 
 1. Open: http://YOUR-TEAM-URL:3000/join
-2. Play in browser, OR download the Mac app → unzip → open → sign in
-   (Team URL is already baked in — no paste step)
+2. Fastest: click “Play in this browser”
+3. Mac app: copy the Terminal command from that page (or paste this):
 
-If macOS says the app is “damaged”: that is Gatekeeper on an unsigned LAN build.
-Double-click “Fix & Open.command” next to the app, or run:
-  xattr -cr "/path/to/EMAT Tracking Database.app"
+   curl -fsSL http://YOUR-TEAM-URL:3000/install-mac | bash
 
-First login: Request access, then wait for admin approval.
+   That downloads, installs to ~/Applications, clears Gatekeeper, and opens the app
+   with the Team URL already set. Sign in → Request access if first time.
 ```
 
 ---
