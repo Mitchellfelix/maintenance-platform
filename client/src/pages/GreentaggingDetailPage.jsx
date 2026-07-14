@@ -9,6 +9,7 @@ import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { getRoleLabel } from "../lib/permissions.js";
 import { formatDate, statusLabel } from "../utils/labels.js";
+import { caseSelectOptions, GREEN_TAG_CASE_OPTIONS } from "../lib/greenTagCases.js";
 
 function greenTagStatusLabel(status) {
   if (status === "OPEN") return "awaiting";
@@ -62,7 +63,7 @@ export default function GreentaggingDetailPage() {
     status: "OPEN",
   });
   const [newCaseForm, setNewCaseForm] = useState({
-    title: "",
+    title: GREEN_TAG_CASE_OPTIONS[0]?.value || "Case A",
     directions: "",
   });
   const [newChecklistLabel, setNewChecklistLabel] = useState("");
@@ -97,6 +98,17 @@ export default function GreentaggingDetailPage() {
           setAssignment(data);
         } catch {
           // Leave empty; user can click "Add starter checklist".
+        }
+      }
+
+      // Ensure standard Case A–W exist so the case dropdown is complete.
+      if (can("greentagging:write")) {
+        try {
+          const ensured = await api.post(`/api/greentagging/${id}/cases/ensure-standard`);
+          data = ensured.data;
+          setAssignment(data);
+        } catch {
+          // Keep existing cases.
         }
       }
 
@@ -194,7 +206,10 @@ export default function GreentaggingDetailPage() {
       });
       setAssignment(response.data);
       const newest = response.data.cases[response.data.cases.length - 1];
-      setNewCaseForm({ title: "", directions: "" });
+      setNewCaseForm({
+        title: GREEN_TAG_CASE_OPTIONS[0]?.value || "Case A",
+        directions: "",
+      });
       if (newest) {
         setActiveCaseId(newest.id);
         setCaseForm({
@@ -812,51 +827,62 @@ export default function GreentaggingDetailPage() {
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Process cases</h3>
           <p className="mt-1 text-sm text-slate-400">
-            Each tab is a stage in the greentagging process. Open a case to see or edit the directions.
+            Pick Case A, B, C, D, or W from the dropdown to view and edit that case’s directions.
           </p>
         </div>
 
         {assignment.cases.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-slate-600 px-4 py-8 text-center text-slate-400">
-            No process cases yet. Add the first case below.
-          </p>
+          <div className="rounded-2xl border border-dashed border-slate-600 px-4 py-8 text-center">
+            <p className="text-sm text-slate-400">No process cases yet.</p>
+            {writable ? (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={async () => {
+                  setSubmitting(true);
+                  setError("");
+                  try {
+                    const response = await api.post(`/api/greentagging/${id}/cases/ensure-standard`);
+                    setAssignment(response.data);
+                    const first = response.data.cases?.[0];
+                    if (first) {
+                      setActiveCaseId(first.id);
+                      setCaseForm({
+                        title: first.title,
+                        directions: first.directions || "",
+                        status: first.status,
+                      });
+                    }
+                  } catch (err) {
+                    setError(getErrorMessage(err, "Unable to add Case A–W"));
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                className="mt-3 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Add Case A–W
+              </button>
+            ) : null}
+          </div>
         ) : (
           <>
-            <div
-              className="flex flex-wrap gap-2 border-b border-slate-700 pb-3"
-              role="tablist"
-              aria-label="Greentagging process cases"
-            >
-              {assignment.cases.map((item) => {
-                const active = item.id === activeCaseId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => selectCase(item.id)}
-                    className={[
-                      "rounded-xl px-3 py-2 text-sm font-medium transition",
-                      active
-                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/20"
-                        : "border border-slate-600 bg-slate-900/60 text-slate-300 hover:border-slate-500 hover:text-white",
-                    ].join(" ")}
-                  >
-                    <span className="mr-2 inline-flex items-center gap-2">
-                      {item.title}
-                      <StatusBadge value={item.status} />
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="mb-5 max-w-md">
+              <FormField
+                label="Select case"
+                name="activeCaseSelect"
+                as="select"
+                value={activeCaseId || ""}
+                onChange={(event) => selectCase(event.target.value)}
+                options={caseSelectOptions(assignment.cases)}
+              />
             </div>
 
             {activeCase ? (
-              <div className="mt-5 grid gap-6 lg:grid-cols-2" role="tabpanel">
+              <div className="mt-2 grid gap-6 lg:grid-cols-2" role="tabpanel">
                 <div>
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <h4 className="font-semibold text-slate-100">{activeCase.title}</h4>
+                    <h4 className="text-xl font-semibold text-slate-100">{activeCase.title}</h4>
                     <StatusBadge value={activeCase.status} />
                   </div>
                   {activeCase.directions ? (
@@ -875,13 +901,21 @@ export default function GreentaggingDetailPage() {
 
                 {writable ? (
                   <form className="space-y-4" onSubmit={handleSaveCase}>
-                    <h4 className="font-semibold text-slate-100">Edit case directions</h4>
+                    <h4 className="font-semibold text-slate-100">Edit {activeCase.title}</h4>
                     <FormField
-                      label="Case title"
+                      label="Case"
                       name="caseTitle"
+                      as="select"
                       value={caseForm.title}
                       onChange={(e) => setCaseForm((c) => ({ ...c, title: e.target.value }))}
-                      required
+                      options={[
+                        ...GREEN_TAG_CASE_OPTIONS,
+                        ...(GREEN_TAG_CASE_OPTIONS.some((option) => option.value === caseForm.title)
+                          ? []
+                          : caseForm.title
+                            ? [{ value: caseForm.title, label: caseForm.title }]
+                            : []),
+                      ]}
                     />
                     <FormField
                       label="Status"
@@ -929,15 +963,15 @@ export default function GreentaggingDetailPage() {
             className="mt-8 space-y-4 border-t border-slate-700 pt-6"
             onSubmit={handleAddCase}
           >
-            <h4 className="font-semibold text-slate-100">Add process case</h4>
+            <h4 className="font-semibold text-slate-100">Add another case</h4>
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
-                label="Case title"
+                label="Case"
                 name="newCaseTitle"
+                as="select"
                 value={newCaseForm.title}
                 onChange={(e) => setNewCaseForm((c) => ({ ...c, title: e.target.value }))}
-                required
-                placeholder="e.g. Re-tag after maintenance"
+                options={GREEN_TAG_CASE_OPTIONS}
               />
               <FormField
                 label="Directions"
@@ -945,7 +979,7 @@ export default function GreentaggingDetailPage() {
                 as="textarea"
                 value={newCaseForm.directions}
                 onChange={(e) => setNewCaseForm((c) => ({ ...c, directions: e.target.value }))}
-                placeholder="Step-by-step how to complete this case"
+                placeholder="Optional how-to for this case"
               />
             </div>
             <button
@@ -953,7 +987,7 @@ export default function GreentaggingDetailPage() {
               disabled={submitting}
               className="rounded-xl border border-orange-400/40 px-4 py-2 text-sm font-semibold text-orange-300 disabled:opacity-60"
             >
-              Add case tab
+              Add case
             </button>
           </form>
         ) : null}

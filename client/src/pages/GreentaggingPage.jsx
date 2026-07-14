@@ -8,6 +8,7 @@ import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import GreentagChecklistPanel from "../components/GreentagChecklistPanel.jsx";
+import GreentagCasesPanel from "../components/GreentagCasesPanel.jsx";
 import StandaloneChecklistsSection from "../components/StandaloneChecklistsSection.jsx";
 import { getRoleLabel } from "../lib/permissions.js";
 import { statusLabel } from "../utils/labels.js";
@@ -482,8 +483,8 @@ export default function GreentaggingPage() {
           <div>
             <h3 className="text-lg font-semibold">Log arrival from field</h3>
             <p className="mt-1 text-sm text-slate-400">
-              Creates an assignment in <span className="text-sky-300">Awaiting from field</span> with the
-              standard process cases and directions ready to follow.
+              Creates an assignment in <span className="text-sky-300">Awaiting from field</span> with
+              Case A, B, C, D, and W ready to follow.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -541,8 +542,7 @@ export default function GreentaggingPage() {
             />
           </div>
           <p className="text-xs text-slate-400">
-            New arrivals get a starter checklist automatically (asset ID, PPE, process stages, documentation,
-            notify ops).
+            New arrivals get a starter checklist plus Case A–W automatically.
           </p>
           <button
             type="submit"
@@ -617,8 +617,18 @@ export default function GreentaggingPage() {
       ) : null}
 
       {!loading ? (
-        <div className="mt-6">
+        <div className="mt-6 space-y-0">
           <GreentagChecklistPanel
+            assignment={selectedAssignment}
+            writable={writable}
+            onError={setError}
+            onAssignmentChange={(next) => {
+              setAssignments((current) =>
+                current.map((item) => (item.id === next.id ? next : item)),
+              );
+            }}
+          />
+          <GreentagCasesPanel
             assignment={selectedAssignment}
             writable={writable}
             onError={setError}

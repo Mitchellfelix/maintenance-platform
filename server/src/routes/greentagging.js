@@ -21,6 +21,7 @@ const {
   DEFAULT_GREEN_TAG_CASES,
   DEFAULT_GREEN_TAG_CHECKLIST,
   applyStatusCompletedAt,
+  missingStandardCases,
 } = require("../services/greenTagDefaults");
 const { handleMulterUpload, publicUrlFor, deleteUploadedFile } = require("../lib/uploads");
 
@@ -282,6 +283,35 @@ router.post(
     }
   },
 );
+
+router.post("/:id/cases/ensure-standard", ...greentaggingWrite, async (req, res, next) => {
+  try {
+    const existing = await getAssignmentForUser(req.params.id, req.user);
+    if (!existing) return res.status(404).json({ error: "Greentagging assignment not found" });
+    await assertSiteAccess(req.user, existing.asset.siteId);
+
+    const missing = missingStandardCases(existing.cases || []);
+    if (missing.length) {
+      await prisma.greenTagCase.createMany({
+        data: missing.map((item) => ({
+          assignmentId: existing.id,
+          title: item.title,
+          directions: item.directions,
+          sortOrder: item.sortOrder,
+          status: "OPEN",
+        })),
+      });
+    }
+
+    const assignment = await getAssignmentForUser(existing.id, req.user);
+    res.json(assignment);
+  } catch (error) {
+    if (error.status === 403) {
+      return res.status(403).json({ error: "Forbidden", message: error.message });
+    }
+    next(error);
+  }
+});
 
 router.patch(
   "/:id/cases/:caseId",

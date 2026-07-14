@@ -1,36 +1,18 @@
+/** Standard greentagging process cases (Case A–W). */
+const GREEN_TAG_CASE_LETTERS = ["A", "B", "C", "D", "W"];
+
 /** Default process cases seeded when an assignment is created without explicit cases. */
-const DEFAULT_GREEN_TAG_CASES = [
-  {
-    title: "Preparation",
-    sortOrder: 0,
-    directions:
-      "Confirm asset identity and safe work conditions.\n\n1. Verify asset name / serial against the tag sheet.\n2. Isolate energy sources as required.\n3. Gather tags, markers, and PPE.\n4. Review any prior greentagging notes for this asset.",
-  },
-  {
-    title: "Inspection",
-    sortOrder: 1,
-    directions:
-      "Inspect the asset before applying tags.\n\n1. Walk the asset and note defects or missing labels.\n2. Check mounting points and surfaces for the tags.\n3. Record findings that affect tagging (damage, access limits).\n4. Mark this case complete only when inspection is signed off.",
-  },
-  {
-    title: "Tag application",
-    sortOrder: 2,
-    directions:
-      "Apply greentags according to the local standard.\n\n1. Affix tags at approved locations on the asset.\n2. Ensure codes / identifiers are legible.\n3. Photograph completion if required by procedure.\n4. Note any tags that could not be applied and why.",
-  },
-  {
-    title: "Verification & closeout",
-    sortOrder: 3,
-    directions:
-      "Verify and close the greentagging effort.\n\n1. Confirm every required tag is in place.\n2. Update assignment status to Completed.\n3. Capture remaining follow-up work (if any) as a work order.\n4. Release the asset back to operations.",
-  },
-];
+const DEFAULT_GREEN_TAG_CASES = GREEN_TAG_CASE_LETTERS.map((letter, index) => ({
+  title: `Case ${letter}`,
+  sortOrder: index,
+  directions: `Directions for greentagging Case ${letter}.\n\n1. Confirm this is the correct case type for the work.\n2. Follow local Case ${letter} procedure.\n3. Capture photos / evidence as required.\n4. Mark this case complete when finished.`,
+}));
 
 /** Default overall checklist items seeded with new assignments. */
 const DEFAULT_GREEN_TAG_CHECKLIST = [
   { label: "Confirm asset identity (name / serial)", sortOrder: 0 },
   { label: "Gather greentags, markers, and required PPE", sortOrder: 1 },
-  { label: "Complete each process case stage in order", sortOrder: 2 },
+  { label: "Complete required cases (A, B, C, D, and/or W)", sortOrder: 2 },
   { label: "Photograph or document completed tags", sortOrder: 3 },
   { label: "Notify ops lead / release asset to operations", sortOrder: 4 },
 ];
@@ -45,8 +27,15 @@ function applyStatusCompletedAt(existingStatus, nextStatus, existingCompletedAt)
   return existingCompletedAt === undefined ? undefined : existingCompletedAt;
 }
 
+function missingStandardCases(existingCases = []) {
+  const titles = new Set(existingCases.map((item) => String(item.title || "").trim().toUpperCase()));
+  return DEFAULT_GREEN_TAG_CASES.filter((item) => !titles.has(item.title.toUpperCase()));
+}
+
 module.exports = {
+  GREEN_TAG_CASE_LETTERS,
   DEFAULT_GREEN_TAG_CASES,
   DEFAULT_GREEN_TAG_CHECKLIST,
   applyStatusCompletedAt,
+  missingStandardCases,
 };
