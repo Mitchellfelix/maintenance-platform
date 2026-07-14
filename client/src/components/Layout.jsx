@@ -8,7 +8,7 @@ const navItems = [
   { to: "/sites", label: "Sites" },
   { to: "/assets", label: "Assets" },
   { to: "/workorders", label: "Work Orders" },
-  { to: "/greentagging", label: "Greentagging" },
+  { to: "/greentagging", label: "Greentagging checklist" },
   { to: "/inventory", label: "Inventory" },
   { to: "/sops", label: "Department SOPs" },
   { to: "/reports/hours", label: "Hours report", permission: "time-entries:report" },

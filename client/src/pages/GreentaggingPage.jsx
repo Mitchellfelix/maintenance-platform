@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { api, getErrorMessage } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
@@ -7,6 +7,7 @@ import FormField from "../components/FormField.jsx";
 import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
+import GreentagChecklistPanel from "../components/GreentagChecklistPanel.jsx";
 import { getRoleLabel } from "../lib/permissions.js";
 import { statusLabel } from "../utils/labels.js";
 
@@ -69,46 +70,64 @@ function checklistProgress(assignment) {
   return `${done}/${items.length} checklist`;
 }
 
-function AssignmentCard({ item, writable, busyId, onMove }) {
+function AssignmentCard({ item, writable, busyId, onMove, selected, onSelect }) {
   const progress = caseProgress(item);
   const checklist = checklistProgress(item);
   const isBusy = busyId === item.id;
 
   return (
-    <article className="rounded-2xl border border-slate-600/80 bg-slate-900/70 p-4 shadow-sm transition hover:border-slate-500">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <Link
-            to={`/greentagging/${item.id}`}
-            className="block truncate font-semibold text-slate-100 hover:text-orange-300"
-          >
-            {item.title}
-          </Link>
-          <p className="mt-1 text-sm text-slate-400">
-            {item.asset?.name || "Unknown asset"}
-            {item.asset?.site?.name ? ` · ${item.asset.site.name}` : ""}
-          </p>
+    <article
+      className={[
+        "rounded-2xl border p-4 shadow-sm transition",
+        selected
+          ? "border-orange-400 bg-orange-950/30 ring-2 ring-orange-500/40"
+          : "border-slate-600/80 bg-slate-900/70 hover:border-slate-500",
+      ].join(" ")}
+    >
+      <button type="button" className="w-full text-left" onClick={() => onSelect(item.id)}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-slate-100">{item.title}</p>
+            <p className="mt-1 text-sm text-slate-400">
+              {item.asset?.name || "Unknown asset"}
+              {item.asset?.site?.name ? ` · ${item.asset.site.name}` : ""}
+            </p>
+          </div>
+          <StatusBadge value={item.status} label={greenTagStatusLabel(item.status)} />
         </div>
-        <StatusBadge value={item.status} label={greenTagStatusLabel(item.status)} />
-      </div>
 
-      <p className="mt-3 text-xs text-slate-400">
-        {progress.label}
-        {checklist ? ` · ${checklist}` : ""}
-        {item.assignee ? ` · ${item.assignee.name || item.assignee.email}` : " · Unassigned"}
-      </p>
+        <p className="mt-3 text-xs text-slate-400">
+          {progress.label}
+          {checklist ? ` · ${checklist}` : ""}
+          {item.assignee ? ` · ${item.assignee.name || item.assignee.email}` : " · Unassigned"}
+        </p>
 
-      {item.summary ? (
-        <p className="mt-2 line-clamp-2 text-sm text-slate-300">{item.summary}</p>
-      ) : null}
+        {item.summary ? (
+          <p className="mt-2 line-clamp-2 text-sm text-slate-300">{item.summary}</p>
+        ) : null}
+
+        {selected ? (
+          <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-orange-300">
+            Checklist open below ↓
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-slate-500">Click to open checklist</p>
+        )}
+      </button>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          to={`/greentagging/${item.id}#overall-checklist`}
+        <button
+          type="button"
+          onClick={() => {
+            onSelect(item.id);
+            requestAnimationFrame(() => {
+              document.getElementById("overall-checklist")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
           className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white"
         >
           Open checklist
-        </Link>
+        </button>
         {writable && item.status !== "IN_PROGRESS" && item.status !== "COMPLETED" ? (
           <button
             type="button"
@@ -168,6 +187,7 @@ export default function GreentaggingPage() {
   const [assetFilter, setAssetFilter] = useState(searchParams.get("assetId") || "");
   const [showCancelled, setShowCancelled] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [selectedId, setSelectedId] = useState("");
 
   const writable = can("greentagging:write");
 
@@ -181,9 +201,19 @@ export default function GreentaggingPage() {
         requests.push(api.get("/api/users/assignees"));
       }
       const [assignmentRes, assetsRes, assigneesRes] = await Promise.all(requests);
-      setAssignments(assignmentRes.data);
+      const list = assignmentRes.data;
+      setAssignments(list);
       setAssets(assetsRes.data);
       if (assigneesRes) setAssignees(assigneesRes.data);
+
+      setSelectedId((current) => {
+        if (current && list.some((item) => item.id === current)) return current;
+        const preferred =
+          list.find((item) => item.status === "IN_PROGRESS") ||
+          list.find((item) => item.status === "OPEN" || item.status === "ON_HOLD") ||
+          list[0];
+        return preferred?.id || "";
+      });
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load greentagging"));
     } finally {
@@ -219,6 +249,31 @@ export default function GreentaggingPage() {
     () => assignments.filter((item) => item.status === "CANCELLED"),
     [assignments],
   );
+
+  const selectedAssignment = useMemo(
+    () => assignments.find((item) => item.id === selectedId) || null,
+    [assignments, selectedId],
+  );
+
+  useEffect(() => {
+    if (!selectedAssignment || !writable) return;
+    if (selectedAssignment.checklistItems?.length) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await api.post(`/api/greentagging/${selectedAssignment.id}/checklist/seed`);
+        if (cancelled) return;
+        setAssignments((current) =>
+          current.map((item) => (item.id === selectedAssignment.id ? response.data : item)),
+        );
+      } catch {
+        // User can still click Add starter checklist.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedAssignment?.id, selectedAssignment?.checklistItems?.length, writable]);
 
   function updateField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -266,7 +321,7 @@ export default function GreentaggingPage() {
     <div>
       <PageHeader
         title="Greentagging"
-        description="See what arrived from the field, what is being tagged, and what is already complete."
+        description="Click a job on the board — its overall checklist opens underneath so you can check steps and add photos."
         action={
           isAuthenticated && writable ? (
             <button
@@ -437,6 +492,8 @@ export default function GreentaggingPage() {
                       writable={writable}
                       busyId={busyId}
                       onMove={handleMove}
+                      selected={item.id === selectedId}
+                      onSelect={setSelectedId}
                     />
                   ))}
                 </div>
@@ -457,10 +514,27 @@ export default function GreentaggingPage() {
                 writable={writable}
                 busyId={busyId}
                 onMove={handleMove}
+                selected={item.id === selectedId}
+                onSelect={setSelectedId}
               />
             ))}
           </div>
         </section>
+      ) : null}
+
+      {!loading ? (
+        <div className="mt-6">
+          <GreentagChecklistPanel
+            assignment={selectedAssignment}
+            writable={writable}
+            onError={setError}
+            onAssignmentChange={(next) => {
+              setAssignments((current) =>
+                current.map((item) => (item.id === next.id ? next : item)),
+              );
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );
