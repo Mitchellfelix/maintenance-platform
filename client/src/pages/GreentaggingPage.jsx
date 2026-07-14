@@ -384,7 +384,7 @@ export default function GreentaggingPage() {
               : "border border-slate-600 bg-slate-900/60 text-slate-300 hover:border-slate-500",
           ].join(" ")}
         >
-          Green Tagging Procedures
+          Green Tagging
         </button>
       </div>
 
