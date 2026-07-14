@@ -62,8 +62,16 @@ function caseProgress(assignment) {
   };
 }
 
+function checklistProgress(assignment) {
+  const items = assignment.checklistItems || [];
+  if (!items.length) return null;
+  const done = items.filter((item) => item.completedAt).length;
+  return `${done}/${items.length} checklist`;
+}
+
 function AssignmentCard({ item, writable, busyId, onMove }) {
   const progress = caseProgress(item);
+  const checklist = checklistProgress(item);
   const isBusy = busyId === item.id;
 
   return (
@@ -86,6 +94,7 @@ function AssignmentCard({ item, writable, busyId, onMove }) {
 
       <p className="mt-3 text-xs text-slate-400">
         {progress.label}
+        {checklist ? ` · ${checklist}` : ""}
         {item.assignee ? ` · ${item.assignee.name || item.assignee.email}` : " · Unassigned"}
       </p>
 
@@ -374,14 +383,18 @@ export default function GreentaggingPage() {
               placeholder="Optional context for the greentagging team"
             />
             <FormField
-              label="Overall instructions"
+              label="Extra notes (optional)"
               name="instructions"
               as="textarea"
               value={form.instructions}
               onChange={updateField}
-              placeholder="Optional how-to for the whole effort (safety, PPE, notify who, etc.)"
+              placeholder="Optional notes in addition to the checklist"
             />
           </div>
+          <p className="text-xs text-slate-400">
+            New arrivals get a starter checklist automatically (asset ID, PPE, process stages, documentation,
+            notify ops).
+          </p>
           <button
             type="submit"
             disabled={submitting}

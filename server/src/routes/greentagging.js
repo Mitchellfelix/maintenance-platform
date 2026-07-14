@@ -8,6 +8,8 @@ const {
   updateGreenTagAssignmentSchema,
   createGreenTagCaseSchema,
   updateGreenTagCaseSchema,
+  createChecklistItemSchema,
+  updateChecklistItemSchema,
 } = require("../schemas/greentagging");
 const { recordAudit } = require("../services/auditService");
 const {
@@ -15,7 +17,11 @@ const {
   buildSiteIdFilter,
   assertSiteAccess,
 } = require("../services/siteAccessService");
-const { DEFAULT_GREEN_TAG_CASES, applyStatusCompletedAt } = require("../services/greenTagDefaults");
+const {
+  DEFAULT_GREEN_TAG_CASES,
+  DEFAULT_GREEN_TAG_CHECKLIST,
+  applyStatusCompletedAt,
+} = require("../services/greenTagDefaults");
 
 const router = express.Router();
 
@@ -31,6 +37,12 @@ const assignmentInclude = {
   },
   assignee: { select: { id: true, name: true, email: true, role: true } },
   cases: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+  checklistItems: {
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      completedBy: { select: { id: true, name: true, email: true } },
+    },
+  },
 };
 
 function buildGreenTagSiteFilter(siteIds) {
@@ -107,6 +119,10 @@ router.post("/", ...greentaggingWrite, validate(createGreenTagAssignmentSchema),
     await assertActiveAssignee(req.validated.assigneeId);
 
     const cases = normalizeCases(req.validated.cases);
+    const checklistItems = DEFAULT_GREEN_TAG_CHECKLIST.map((item) => ({
+      label: item.label,
+      sortOrder: item.sortOrder,
+    }));
     const status = req.validated.status || "OPEN";
 
     const assignment = await prisma.greenTagAssignment.create({
@@ -120,6 +136,7 @@ router.post("/", ...greentaggingWrite, validate(createGreenTagAssignmentSchema),
         dueAt: req.validated.dueAt || null,
         completedAt: status === "COMPLETED" ? new Date() : null,
         cases: { create: cases },
+        checklistItems: { create: checklistItems },
       },
       include: assignmentInclude,
     });
@@ -321,6 +338,158 @@ router.delete("/:id/cases/:caseId", ...greentaggingDelete, async (req, res, next
       entityId: caseRow.id,
       actorId: req.user.id,
       metadata: { assignmentId: existing.id, title: caseRow.title },
+    });
+
+    res.json(assignment);
+  } catch (error) {
+    if (error.status === 403) {
+      return res.status(403).json({ error: "Forbidden", message: error.message });
+    }
+    next(error);
+  }
+});
+
+router.post("/:id/checklist/seed", ...greentaggingWrite, async (req, res, next) => {
+  try {
+    const existing = await getAssignmentForUser(req.params.id, req.user);
+    if (!existing) return res.status(404).json({ error: "Greentagging assignment not found" });
+    await assertSiteAccess(req.user, existing.asset.siteId);
+
+    if ((existing.checklistItems || []).length > 0) {
+      return res.status(400).json({ error: "Checklist already has items" });
+    }
+
+    await prisma.greenTagChecklistItem.createMany({
+      data: DEFAULT_GREEN_TAG_CHECKLIST.map((item) => ({
+        assignmentId: existing.id,
+        label: item.label,
+        sortOrder: item.sortOrder,
+      })),
+    });
+
+    const assignment = await getAssignmentForUser(existing.id, req.user);
+    res.status(201).json(assignment);
+  } catch (error) {
+    if (error.status === 403) {
+      return res.status(403).json({ error: "Forbidden", message: error.message });
+    }
+    next(error);
+  }
+});
+
+router.post(
+  "/:id/checklist",
+  ...greentaggingWrite,
+  validate(createChecklistItemSchema),
+  async (req, res, next) => {
+    try {
+      const existing = await getAssignmentForUser(req.params.id, req.user);
+      if (!existing) return res.status(404).json({ error: "Greentagging assignment not found" });
+      await assertSiteAccess(req.user, existing.asset.siteId);
+
+      const maxOrder = (existing.checklistItems || []).reduce(
+        (max, item) => Math.max(max, item.sortOrder),
+        -1,
+      );
+
+      await prisma.greenTagChecklistItem.create({
+        data: {
+          assignmentId: existing.id,
+          label: req.validated.label,
+          sortOrder: req.validated.sortOrder ?? maxOrder + 1,
+        },
+      });
+
+      const assignment = await getAssignmentForUser(existing.id, req.user);
+
+      await recordAudit({
+        action: "greentagging.checklist.created",
+        entityType: "greentagging-checklist",
+        entityId: assignment.id,
+        actorId: req.user.id,
+        metadata: { assignmentId: existing.id, label: req.validated.label },
+      });
+
+      res.status(201).json(assignment);
+    } catch (error) {
+      if (error.status === 403) {
+        return res.status(403).json({ error: "Forbidden", message: error.message });
+      }
+      next(error);
+    }
+  },
+);
+
+router.patch(
+  "/:id/checklist/:itemId",
+  ...greentaggingWrite,
+  validate(updateChecklistItemSchema),
+  async (req, res, next) => {
+    try {
+      const existing = await getAssignmentForUser(req.params.id, req.user);
+      if (!existing) return res.status(404).json({ error: "Greentagging assignment not found" });
+      await assertSiteAccess(req.user, existing.asset.siteId);
+
+      const item = (existing.checklistItems || []).find((row) => row.id === req.params.itemId);
+      if (!item) return res.status(404).json({ error: "Checklist item not found" });
+
+      const data = {};
+      if (req.validated.label !== undefined) data.label = req.validated.label;
+      if (req.validated.sortOrder !== undefined) data.sortOrder = req.validated.sortOrder;
+      if (req.validated.completed !== undefined) {
+        if (req.validated.completed) {
+          data.completedAt = item.completedAt || new Date();
+          data.completedById = req.user.id;
+        } else {
+          data.completedAt = null;
+          data.completedById = null;
+        }
+      }
+
+      await prisma.greenTagChecklistItem.update({
+        where: { id: item.id },
+        data,
+      });
+
+      const assignment = await getAssignmentForUser(existing.id, req.user);
+
+      await recordAudit({
+        action: "greentagging.checklist.updated",
+        entityType: "greentagging-checklist",
+        entityId: item.id,
+        actorId: req.user.id,
+        metadata: { assignmentId: existing.id, changes: req.validated },
+      });
+
+      res.json(assignment);
+    } catch (error) {
+      if (error.status === 403) {
+        return res.status(403).json({ error: "Forbidden", message: error.message });
+      }
+      next(error);
+    }
+  },
+);
+
+router.delete("/:id/checklist/:itemId", ...greentaggingWrite, async (req, res, next) => {
+  try {
+    const existing = await getAssignmentForUser(req.params.id, req.user);
+    if (!existing) return res.status(404).json({ error: "Greentagging assignment not found" });
+    await assertSiteAccess(req.user, existing.asset.siteId);
+
+    const item = (existing.checklistItems || []).find((row) => row.id === req.params.itemId);
+    if (!item) return res.status(404).json({ error: "Checklist item not found" });
+
+    await prisma.greenTagChecklistItem.delete({ where: { id: item.id } });
+
+    const assignment = await getAssignmentForUser(existing.id, req.user);
+
+    await recordAudit({
+      action: "greentagging.checklist.deleted",
+      entityType: "greentagging-checklist",
+      entityId: item.id,
+      actorId: req.user.id,
+      metadata: { assignmentId: existing.id, label: item.label },
     });
 
     res.json(assignment);

@@ -65,6 +65,7 @@ export default function GreentaggingDetailPage() {
     title: "",
     directions: "",
   });
+  const [newChecklistLabel, setNewChecklistLabel] = useState("");
 
   async function load() {
     setLoading(true);
@@ -468,16 +469,25 @@ export default function GreentaggingDetailPage() {
       </div>
 
       <section className="mb-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Overall instructions</h3>
-          <p className="mt-1 text-sm text-slate-400">
-            How-to for the whole greentagging effort. Case tabs below still have their own step directions.
-          </p>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">Overall checklist</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Check off how-to steps for this greentagging effort. Case tabs below still have their own stage
+              directions.
+            </p>
+          </div>
+          {assignment.checklistItems?.length ? (
+            <p className="text-sm font-medium text-orange-300">
+              {assignment.checklistItems.filter((item) => item.completedAt).length}/
+              {assignment.checklistItems.length} done
+            </p>
+          ) : null}
         </div>
 
         {writable ? (
           <form
-            className="space-y-4"
+            className="mb-4 space-y-3"
             onSubmit={async (event) => {
               event.preventDefault();
               setSubmitting(true);
@@ -488,37 +498,172 @@ export default function GreentaggingDetailPage() {
                 });
                 setAssignment(response.data);
               } catch (err) {
-                setError(getErrorMessage(err, "Unable to save overall instructions"));
+                setError(getErrorMessage(err, "Unable to save notes"));
               } finally {
                 setSubmitting(false);
               }
             }}
           >
             <FormField
-              label="Instructions"
+              label="Notes (optional)"
               name="instructions"
               as="textarea"
               value={assignmentForm.instructions}
               onChange={(e) => setAssignmentForm((c) => ({ ...c, instructions: e.target.value }))}
-              placeholder="e.g. Safety requirements, PPE, where tags are stored, who to notify when complete…"
+              placeholder="Extra guidance that doesn’t fit a checkbox…"
             />
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 disabled:opacity-60"
             >
-              Save overall instructions
+              Save notes
             </button>
           </form>
         ) : assignment.instructions ? (
-          <pre className="whitespace-pre-wrap rounded-2xl border border-slate-700 bg-slate-900/70 p-4 text-sm leading-relaxed text-slate-100">
+          <pre className="mb-4 whitespace-pre-wrap rounded-2xl border border-slate-700 bg-slate-900/70 p-4 text-sm leading-relaxed text-slate-100">
             {assignment.instructions}
           </pre>
+        ) : null}
+
+        {(assignment.checklistItems || []).length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-600 px-4 py-6 text-center">
+            <p className="text-sm text-slate-400">No checklist items yet.</p>
+            {writable ? (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={async () => {
+                  setSubmitting(true);
+                  setError("");
+                  try {
+                    const response = await api.post(`/api/greentagging/${id}/checklist/seed`);
+                    setAssignment(response.data);
+                  } catch (err) {
+                    setError(getErrorMessage(err, "Unable to add starter checklist"));
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+                className="mt-3 rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Add starter checklist
+              </button>
+            ) : null}
+          </div>
         ) : (
-          <p className="rounded-2xl border border-dashed border-slate-600 p-4 text-sm text-slate-400">
-            No overall instructions yet.
-          </p>
+          <ul className="space-y-2">
+            {assignment.checklistItems.map((item) => {
+              const done = Boolean(item.completedAt);
+              return (
+                <li
+                  key={item.id}
+                  className={[
+                    "flex items-start gap-3 rounded-2xl border px-3 py-3",
+                    done ? "border-orange-500/30 bg-orange-950/20" : "border-slate-700 bg-slate-900/50",
+                  ].join(" ")}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-slate-500"
+                    checked={done}
+                    disabled={!writable || submitting}
+                    onChange={async (event) => {
+                      setSubmitting(true);
+                      setError("");
+                      try {
+                        const response = await api.patch(
+                          `/api/greentagging/${id}/checklist/${item.id}`,
+                          { completed: event.target.checked },
+                        );
+                        setAssignment(response.data);
+                      } catch (err) {
+                        setError(getErrorMessage(err, "Unable to update checklist item"));
+                      } finally {
+                        setSubmitting(false);
+                      }
+                    }}
+                    aria-label={item.label}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className={done ? "text-sm text-slate-400 line-through" : "text-sm text-slate-100"}>
+                      {item.label}
+                    </p>
+                    {done && item.completedBy ? (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Checked by {item.completedBy.name || item.completedBy.email}
+                      </p>
+                    ) : null}
+                  </div>
+                  {writable ? (
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={async () => {
+                        if (!window.confirm("Remove this checklist item?")) return;
+                        setSubmitting(true);
+                        setError("");
+                        try {
+                          const response = await api.delete(
+                            `/api/greentagging/${id}/checklist/${item.id}`,
+                          );
+                          setAssignment(response.data);
+                        } catch (err) {
+                          setError(getErrorMessage(err, "Unable to remove checklist item"));
+                        } finally {
+                          setSubmitting(false);
+                        }
+                      }}
+                      className="text-xs text-rose-300 hover:underline disabled:opacity-60"
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
         )}
+
+        {writable ? (
+          <form
+            className="mt-4 flex flex-wrap items-end gap-3 border-t border-slate-700 pt-4"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              const label = newChecklistLabel.trim();
+              if (!label) return;
+              setSubmitting(true);
+              setError("");
+              try {
+                const response = await api.post(`/api/greentagging/${id}/checklist`, { label });
+                setAssignment(response.data);
+                setNewChecklistLabel("");
+              } catch (err) {
+                setError(getErrorMessage(err, "Unable to add checklist item"));
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            <div className="min-w-[16rem] flex-1">
+              <FormField
+                label="Add checklist item"
+                name="newChecklistLabel"
+                value={newChecklistLabel}
+                onChange={(e) => setNewChecklistLabel(e.target.value)}
+                placeholder="e.g. Verify lockout completed"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-xl border border-orange-400/40 px-4 py-2 text-sm font-semibold text-orange-300 disabled:opacity-60"
+            >
+              Add item
+            </button>
+          </form>
+        ) : null}
       </section>
 
       <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">

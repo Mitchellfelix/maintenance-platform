@@ -26,6 +26,15 @@ const DEFAULT_GREEN_TAG_CASES = [
   },
 ];
 
+/** Default overall checklist items seeded with new assignments. */
+const DEFAULT_GREEN_TAG_CHECKLIST = [
+  { label: "Confirm asset identity (name / serial)", sortOrder: 0 },
+  { label: "Gather greentags, markers, and required PPE", sortOrder: 1 },
+  { label: "Complete each process case stage in order", sortOrder: 2 },
+  { label: "Photograph or document completed tags", sortOrder: 3 },
+  { label: "Notify ops lead / release asset to operations", sortOrder: 4 },
+];
+
 function applyStatusCompletedAt(existingStatus, nextStatus, existingCompletedAt) {
   if (nextStatus === "COMPLETED" && existingStatus !== "COMPLETED") {
     return new Date();
@@ -38,5 +47,6 @@ function applyStatusCompletedAt(existingStatus, nextStatus, existingCompletedAt)
 
 module.exports = {
   DEFAULT_GREEN_TAG_CASES,
+  DEFAULT_GREEN_TAG_CHECKLIST,
   applyStatusCompletedAt,
 };

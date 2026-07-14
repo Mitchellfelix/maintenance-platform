@@ -84,6 +84,7 @@ model User {
   invitesSent         UserInvite[]    @relation("InviteSender")
   passwordResets      PasswordReset[]
   greenTagAssignments GreenTagAssignment[] @relation("GreenTagAssignee")
+  greenTagChecklistCompletions GreenTagChecklistItem[] @relation("GreenTagChecklistCompleter")
 }
 
 // ——— Locations & equipment ———
@@ -297,11 +298,28 @@ model GreenTagAssignment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  cases GreenTagCase[]
+  cases          GreenTagCase[]
+  checklistItems GreenTagChecklistItem[]
 
   @@index([assetId])
   @@index([status])
   @@index([assigneeId])
+}
+
+/// Checkable overall how-to steps for a greentagging assignment.
+model GreenTagChecklistItem {
+  id           String             @id @default(cuid())
+  assignmentId String
+  assignment   GreenTagAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  label        String
+  sortOrder    Int                @default(0)
+  completedAt  DateTime?
+  completedById String?
+  completedBy  User?              @relation("GreenTagChecklistCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([assignmentId])
 }
 
 /// Process case within a greentagging effort — shown as subtabs on the assignment.

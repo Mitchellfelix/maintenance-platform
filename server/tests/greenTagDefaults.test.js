@@ -1,10 +1,19 @@
-const { DEFAULT_GREEN_TAG_CASES, applyStatusCompletedAt } = require("../src/services/greenTagDefaults");
+const {
+  DEFAULT_GREEN_TAG_CASES,
+  DEFAULT_GREEN_TAG_CHECKLIST,
+  applyStatusCompletedAt,
+} = require("../src/services/greenTagDefaults");
 
 describe("greenTagDefaults", () => {
   it("provides the default process cases", () => {
     expect(DEFAULT_GREEN_TAG_CASES.length).toBeGreaterThanOrEqual(4);
     expect(DEFAULT_GREEN_TAG_CASES[0].title).toBe("Preparation");
     expect(DEFAULT_GREEN_TAG_CASES.every((item) => item.directions)).toBe(true);
+  });
+
+  it("provides a default overall checklist", () => {
+    expect(DEFAULT_GREEN_TAG_CHECKLIST.length).toBeGreaterThanOrEqual(4);
+    expect(DEFAULT_GREEN_TAG_CHECKLIST.every((item) => item.label)).toBe(true);
   });
 
   it("sets completedAt when moving to COMPLETED", () => {

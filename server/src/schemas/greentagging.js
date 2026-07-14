@@ -53,9 +53,26 @@ const updateGreenTagCaseSchema = z
     message: "At least one field is required",
   });
 
+const createChecklistItemSchema = z.object({
+  label: z.string().trim().min(1),
+  sortOrder: z.coerce.number().int().min(0).optional(),
+});
+
+const updateChecklistItemSchema = z
+  .object({
+    label: z.string().trim().min(1).optional(),
+    sortOrder: z.coerce.number().int().min(0).optional(),
+    completed: z.boolean().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field is required",
+  });
+
 module.exports = {
   createGreenTagAssignmentSchema,
   updateGreenTagAssignmentSchema,
   createGreenTagCaseSchema,
   updateGreenTagCaseSchema,
+  createChecklistItemSchema,
+  updateChecklistItemSchema,
 };
