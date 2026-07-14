@@ -35,18 +35,18 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-300 px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
       <div className="flow-orb -left-16 top-10 h-72 w-72 bg-emerald-300/40" />
       <div className="flow-card relative w-full max-w-md p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">EMAT</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Forgot password</h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-slate-300">
           Enter your email and we&apos;ll send a reset link if an active account exists. Mail must be
           configured on the server.
         </p>
         <ErrorBanner message={error} />
         {success ? (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <div className="mt-4 rounded-xl border border-emerald-800 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-100">
             {success}
           </div>
         ) : null}
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
             {submitting ? "Sending..." : "Send reset link"}
           </button>
         </form>
-        <p className="mt-6 text-sm text-slate-600">
+        <p className="mt-6 text-sm text-slate-300">
           <Link to="/login" className="font-medium text-emerald-700 hover:underline">
             Back to sign in
           </Link>

@@ -128,7 +128,7 @@ export default function AccessRequestsAdminPage() {
             onClick={() => setFilter(value)}
             className={[
               "rounded-xl px-3 py-2 text-sm font-medium",
-              filter === value ? "bg-emerald-500 text-white" : "border border-slate-300 bg-slate-200 text-slate-700",
+              filter === value ? "bg-emerald-500 text-white" : "border border-slate-600 bg-slate-800/90 text-slate-200",
             ].join(" ")}
           >
             {value ? value.replaceAll("_", " ").toLowerCase() : "All"}
@@ -139,9 +139,9 @@ export default function AccessRequestsAdminPage() {
       {loading ? <LoadingState label="Loading access requests..." /> : null}
 
       {!loading ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-slate-600 bg-slate-800/90 shadow-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-700/70 text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3">Submitted</th>
                 <th className="px-4 py-3">User</th>
@@ -155,7 +155,7 @@ export default function AccessRequestsAdminPage() {
             <tbody>
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                     No access requests found.
                   </td>
                 </tr>
@@ -165,13 +165,13 @@ export default function AccessRequestsAdminPage() {
                   const isPending = entry.status === "PENDING";
 
                   return (
-                    <tr key={entry.id} className="border-t border-slate-100 align-top">
-                      <td className="px-4 py-3 text-slate-600">
+                    <tr key={entry.id} className="border-t border-slate-700 align-top">
+                      <td className="px-4 py-3 text-slate-300">
                         {new Date(entry.createdAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-medium">{entry.requester?.name || "—"}</p>
-                        <p className="text-xs text-slate-500">{entry.requester?.email}</p>
+                        <p className="text-xs text-slate-400">{entry.requester?.email}</p>
                         <p className="mt-1 text-xs text-slate-400">
                           Current: {getRoleLabel(entry.requester?.role)}
                           {entry.requester?.status === "PENDING" ? " · account pending" : ""}
@@ -196,14 +196,14 @@ export default function AccessRequestsAdminPage() {
                           <span className="font-medium">{getRoleLabel(entry.requestedRole)}</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 text-slate-300">
                         {isPending && draft && isSiteScopedRole(draft.requestedRole) ? (
                           <div className="flex flex-col gap-2">
                             {sites.length === 0 ? (
-                              <span className="text-slate-500">No sites available</span>
+                              <span className="text-slate-400">No sites available</span>
                             ) : (
                               sites.map((site) => (
-                                <label key={site.id} className="flex items-center gap-2 text-slate-700">
+                                <label key={site.id} className="flex items-center gap-2 text-slate-200">
                                   <input
                                     type="checkbox"
                                     checked={draft.requestedSiteIds.includes(site.id)}
@@ -219,11 +219,11 @@ export default function AccessRequestsAdminPage() {
                           siteNames(entry.requestedSiteIds)
                         )}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{entry.reason || "—"}</td>
+                      <td className="px-4 py-3 text-slate-300">{entry.reason || "—"}</td>
                       <td className="px-4 py-3">
                         <StatusBadge value={entry.status} />
                         {entry.reviewNote ? (
-                          <p className="mt-2 text-xs text-slate-500">{entry.reviewNote}</p>
+                          <p className="mt-2 text-xs text-slate-400">{entry.reviewNote}</p>
                         ) : null}
                       </td>
                       <td className="px-4 py-3">

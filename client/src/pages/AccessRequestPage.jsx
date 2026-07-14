@@ -122,7 +122,7 @@ export default function AccessRequestPage() {
       {!hasPending ? (
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm"
+          className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm"
         >
           <RoleSelect
             label="Requested role"
@@ -135,13 +135,13 @@ export default function AccessRequestPage() {
 
           {isSiteScopedRole(form.requestedRole) ? (
             <div>
-              <p className="text-sm font-medium text-slate-700">Sites</p>
+              <p className="text-sm font-medium text-slate-200">Sites</p>
               <div className="mt-2 space-y-2">
                 {sites.length === 0 ? (
-                  <p className="text-sm text-slate-500">No sites available yet.</p>
+                  <p className="text-sm text-slate-400">No sites available yet.</p>
                 ) : (
                   sites.map((site) => (
-                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-700">
+                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
                       <input
                         type="checkbox"
                         checked={form.requestedSiteIds.includes(site.id)}
@@ -155,7 +155,7 @@ export default function AccessRequestPage() {
             </div>
           ) : null}
 
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-slate-200">
             Reason
             <textarea
               name="reason"
@@ -163,7 +163,7 @@ export default function AccessRequestPage() {
               onChange={updateField}
               rows={4}
               placeholder="Explain why you need this access"
-              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2"
+              className="mt-2 w-full rounded-xl border border-slate-600 px-3 py-2"
             />
           </label>
 
@@ -176,7 +176,7 @@ export default function AccessRequestPage() {
           </button>
         </form>
       ) : (
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-3xl border border-amber-800/80 bg-amber-950/50 p-4 text-sm text-amber-100">
           You already have a pending request. Cancel it below to submit a new one.
         </div>
       )}
@@ -184,9 +184,9 @@ export default function AccessRequestPage() {
       {loading ? <LoadingState label="Loading your requests..." /> : null}
 
       {!loading ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-slate-600 bg-slate-800/90 shadow-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-700/70 text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3">Submitted</th>
                 <th className="px-4 py-3">Role</th>
@@ -199,22 +199,22 @@ export default function AccessRequestPage() {
             <tbody>
               {requests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
                     No access requests yet.
                   </td>
                 </tr>
               ) : (
                 requests.map((entry) => (
-                  <tr key={entry.id} className="border-t border-slate-100 align-top">
-                    <td className="px-4 py-3 text-slate-600">
+                  <tr key={entry.id} className="border-t border-slate-700 align-top">
+                    <td className="px-4 py-3 text-slate-300">
                       {new Date(entry.createdAt).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 font-medium">{getRoleLabel(entry.requestedRole)}</td>
                     <td className="px-4 py-3">
                       <StatusBadge value={entry.status} />
                     </td>
-                    <td className="px-4 py-3 text-slate-600">{entry.reason || "—"}</td>
-                    <td className="px-4 py-3 text-slate-600">
+                    <td className="px-4 py-3 text-slate-300">{entry.reason || "—"}</td>
+                    <td className="px-4 py-3 text-slate-300">
                       {entry.reviewNote || "—"}
                       {entry.reviewer ? (
                         <span className="mt-1 block text-xs text-slate-400">
@@ -228,7 +228,7 @@ export default function AccessRequestPage() {
                           type="button"
                           onClick={() => handleCancel(entry.id)}
                           disabled={cancellingId === entry.id}
-                          className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                          className="rounded-xl border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200"
                         >
                           Cancel
                         </button>

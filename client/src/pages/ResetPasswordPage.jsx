@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-300 px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
       <div className="flow-orb -left-16 top-10 h-72 w-72 bg-emerald-300/40" />
       <div className="flow-card relative w-full max-w-md p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">EMAT</p>
@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
         <ErrorBanner message={error} />
         {!loading && preview ? (
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-300">
               Resetting password for <span className="font-medium">{preview.email}</span>
             </p>
             <FormField
@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
           </form>
         ) : null}
         {!loading && !preview ? (
-          <p className="mt-4 text-sm text-slate-600">
+          <p className="mt-4 text-sm text-slate-300">
             <Link to="/forgot-password" className="font-medium text-emerald-700 hover:underline">
               Request a new reset link
             </Link>

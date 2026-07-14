@@ -62,7 +62,7 @@ export default function SitesPage() {
               Sign in to create
             </Link>
           ) : !can("sites:write") ? (
-            <span className="text-sm text-slate-500">Ops Lead or Operator access required to create</span>
+            <span className="text-sm text-slate-400">Ops Lead or Operator access required to create</span>
           ) : null
         }
       />
@@ -70,7 +70,7 @@ export default function SitesPage() {
       <ErrorBanner message={error} />
 
       {isAuthenticated && can("sites:write") ? (
-        <form className="mb-6 grid gap-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
+        <form className="mb-6 grid gap-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm md:grid-cols-2" onSubmit={handleCreate}>
           <FormField label="Site name" name="name" value={form.name} onChange={updateField} required />
           <FormField label="Address" name="address" value={form.address} onChange={updateField} />
           <div className="md:col-span-2">

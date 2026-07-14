@@ -106,16 +106,16 @@ export default function SopsPage() {
               Sign in to add SOPs
             </Link>
           ) : !can("sops:write") ? (
-            <span className="text-sm text-slate-500">Ops Lead access required to publish SOPs</span>
+            <span className="text-sm text-slate-400">Ops Lead access required to publish SOPs</span>
           ) : null
         }
       />
 
       <ErrorBanner message={error} />
 
-      <div className="mb-6 flex flex-wrap items-end gap-4 rounded-3xl border border-slate-300 bg-slate-200 p-4 shadow-sm">
+      <div className="mb-6 flex flex-wrap items-end gap-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-4 shadow-sm">
         <div className="min-w-[12rem] flex-1">
-          <label className="text-sm font-medium text-slate-700" htmlFor="departmentFilter">
+          <label className="text-sm font-medium text-slate-200" htmlFor="departmentFilter">
             Filter by department
           </label>
           <select
@@ -136,13 +136,13 @@ export default function SopsPage() {
 
       {isAuthenticated && can("sops:write") ? (
         <form
-          className="mb-6 grid gap-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm md:grid-cols-2"
+          className="mb-6 grid gap-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm md:grid-cols-2"
           onSubmit={handleCreate}
         >
           <h3 className="text-lg font-semibold md:col-span-2">Add SOP</h3>
           <FormField label="Title" name="title" value={form.title} onChange={updateField} required />
           <div>
-            <label className="text-sm font-medium text-slate-700" htmlFor="department">
+            <label className="text-sm font-medium text-slate-200" htmlFor="department">
               Department
             </label>
             <input
@@ -171,7 +171,7 @@ export default function SopsPage() {
           />
           <FormField label="Summary" name="summary" value={form.summary} onChange={updateField} />
           <div className="md:col-span-2">
-            <label className="text-sm font-medium text-slate-700" htmlFor="content">
+            <label className="text-sm font-medium text-slate-200" htmlFor="content">
               Procedure content
             </label>
             <textarea
@@ -204,7 +204,7 @@ export default function SopsPage() {
         <div className="space-y-8">
           {groupedSops.map(([department, items]) => (
             <section key={department}>
-              <h3 className="mb-3 text-lg font-semibold text-slate-800">{department}</h3>
+              <h3 className="mb-3 text-lg font-semibold text-slate-100">{department}</h3>
               <div className="grid gap-4">
                 {items.map((sop) => (
                   <RecordLink

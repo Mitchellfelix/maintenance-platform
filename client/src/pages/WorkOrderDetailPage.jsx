@@ -153,7 +153,7 @@ export default function WorkOrderDetailPage() {
           <div className="flex items-center gap-3">
             <StatusBadge value={workOrder.status} />
             <StatusBadge value={workOrder.priority} />
-            <Link to="/workorders" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium">
+            <Link to="/workorders" className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium">
               Back to work orders
             </Link>
           </div>
@@ -163,35 +163,35 @@ export default function WorkOrderDetailPage() {
       <ErrorBanner message={error} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
           <h3 className="text-lg font-semibold">Timeline</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Requester</dt>
+              <dt className="text-slate-400">Requester</dt>
               <dd className="font-medium">{workOrder.requester?.name || workOrder.requester?.email || "—"}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Assignee</dt>
+              <dt className="text-slate-400">Assignee</dt>
               <dd className="font-medium">{workOrder.assignee?.name || workOrder.assignee?.email || "Unassigned"}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Due</dt>
+              <dt className="text-slate-400">Due</dt>
               <dd className="font-medium">{formatDate(workOrder.dueAt)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Started</dt>
+              <dt className="text-slate-400">Started</dt>
               <dd className="font-medium">{formatDate(workOrder.startedAt)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Completed</dt>
+              <dt className="text-slate-400">Completed</dt>
               <dd className="font-medium">{formatDate(workOrder.completedAt)}</dd>
             </div>
           </dl>
-          {workOrder.description ? <p className="mt-4 text-sm text-slate-600">{workOrder.description}</p> : null}
+          {workOrder.description ? <p className="mt-4 text-sm text-slate-300">{workOrder.description}</p> : null}
         </section>
 
         {isAuthenticated && editable ? (
-          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleSave}>
+          <form className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit work order</h3>
             {fieldAccess.title ? (
               <FormField label="Title" name="title" value={form.title} onChange={updateField} required />
@@ -285,8 +285,8 @@ export default function WorkOrderDetailPage() {
             </div>
           </form>
         ) : (
-          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
-            <p className="text-sm text-slate-500">
+          <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+            <p className="text-sm text-slate-400">
               {!isAuthenticated
                 ? "Sign in to edit this work order."
                 : "You do not have permission to edit this work order."}

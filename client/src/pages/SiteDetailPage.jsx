@@ -75,7 +75,7 @@ export default function SiteDetailPage() {
         title={site.name}
         description={site.address || "No address provided"}
         action={
-          <Link to="/sites" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium">
+          <Link to="/sites" className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium">
             Back to sites
           </Link>
         }
@@ -84,22 +84,22 @@ export default function SiteDetailPage() {
       <ErrorBanner message={error} />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
           <h3 className="text-lg font-semibold">Linked records</h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Assets</dt>
+              <dt className="text-slate-400">Assets</dt>
               <dd className="font-medium">{site.assets?.length || 0}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-slate-500">Work orders</dt>
+              <dt className="text-slate-400">Work orders</dt>
               <dd className="font-medium">{site.workOrders?.length || 0}</dd>
             </div>
           </dl>
         </section>
 
         {isAuthenticated && can("sites:write") ? (
-          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleSave}>
+          <form className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm" onSubmit={handleSave}>
             <h3 className="text-lg font-semibold">Edit site</h3>
             <FormField label="Site name" name="name" value={form.name} onChange={updateField} required />
             <FormField label="Address" name="address" value={form.address} onChange={updateField} />
@@ -124,8 +124,8 @@ export default function SiteDetailPage() {
             </div>
           </form>
         ) : (
-          <section className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
-            <p className="text-sm text-slate-500">
+          <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+            <p className="text-sm text-slate-400">
               {!isAuthenticated
                 ? "Sign in to edit or delete this site."
                 : "Ops Lead or Operator access is required to edit sites."}

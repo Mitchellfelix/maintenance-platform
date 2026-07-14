@@ -193,16 +193,16 @@ export default function UsersAdminPage() {
       />
       <ErrorBanner message={error} />
       {notice ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <div className="rounded-2xl border border-emerald-800 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-100">
           {notice}
         </div>
       ) : null}
 
       {canManage ? (
         <div className="grid gap-6 lg:grid-cols-2">
-          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleCreateUser}>
+          <form className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm" onSubmit={handleCreateUser}>
             <h3 className="text-lg font-semibold">Add user</h3>
-            <p className="text-sm text-slate-500">Creates an active account immediately.</p>
+            <p className="text-sm text-slate-400">Creates an active account immediately.</p>
             <FormField
               label="Name"
               name="name"
@@ -238,10 +238,10 @@ export default function UsersAdminPage() {
             />
             {isSiteScopedRole(createForm.role) ? (
               <div>
-                <p className="text-sm font-medium text-slate-700">Sites</p>
+                <p className="text-sm font-medium text-slate-200">Sites</p>
                 <div className="mt-2 space-y-2">
                   {sites.map((site) => (
-                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-700">
+                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
                       <input
                         type="checkbox"
                         checked={createForm.siteIds.includes(site.id)}
@@ -253,7 +253,7 @@ export default function UsersAdminPage() {
                 </div>
               </div>
             ) : null}
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm text-slate-200">
               <input
                 type="checkbox"
                 checked={createForm.sendCredentials}
@@ -270,9 +270,9 @@ export default function UsersAdminPage() {
             </button>
           </form>
 
-          <form className="space-y-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm" onSubmit={handleInvite}>
+          <form className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm" onSubmit={handleInvite}>
             <h3 className="text-lg font-semibold">Invite by email</h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               Sends a link to set their password. If mail isn’t configured, you’ll get a shareable link.
             </p>
             <FormField
@@ -303,10 +303,10 @@ export default function UsersAdminPage() {
             />
             {isSiteScopedRole(inviteForm.role) ? (
               <div>
-                <p className="text-sm font-medium text-slate-700">Sites</p>
+                <p className="text-sm font-medium text-slate-200">Sites</p>
                 <div className="mt-2 space-y-2">
                   {sites.map((site) => (
-                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-700">
+                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
                       <input
                         type="checkbox"
                         checked={inviteForm.siteIds.includes(site.id)}
@@ -332,12 +332,12 @@ export default function UsersAdminPage() {
       {loading ? <LoadingState label="Loading users..." /> : null}
 
       {!loading && invites.length > 0 ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 shadow-sm">
-          <div className="border-b border-slate-300 px-4 py-3">
+        <div className="overflow-hidden rounded-3xl border border-slate-600 bg-slate-800/90 shadow-sm">
+          <div className="border-b border-slate-600 px-4 py-3">
             <h3 className="font-semibold">Pending invites</h3>
           </div>
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-700/70 text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Role</th>
@@ -348,13 +348,13 @@ export default function UsersAdminPage() {
             </thead>
             <tbody>
               {invites.map((invite) => (
-                <tr key={invite.id} className="border-t border-slate-100">
+                <tr key={invite.id} className="border-t border-slate-700">
                   <td className="px-4 py-3">
                     <div className="font-medium">{invite.name || "—"}</div>
-                    <div className="text-slate-600">{invite.email}</div>
+                    <div className="text-slate-300">{invite.email}</div>
                   </td>
                   <td className="px-4 py-3">{getRoleLabel(invite.role)}</td>
-                  <td className="px-4 py-3 text-slate-600">{new Date(invite.expiresAt).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-slate-300">{new Date(invite.expiresAt).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <button
                       type="button"
@@ -370,7 +370,7 @@ export default function UsersAdminPage() {
                         type="button"
                         disabled={savingId === invite.id}
                         onClick={() => handleRevokeInvite(invite.id)}
-                        className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-medium"
+                        className="rounded-xl border border-slate-600 px-3 py-1.5 text-xs font-medium"
                       >
                         Revoke
                       </button>
@@ -384,9 +384,9 @@ export default function UsersAdminPage() {
       ) : null}
 
       {!loading ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-300 bg-slate-200 shadow-sm">
+        <div className="overflow-hidden rounded-3xl border border-slate-600 bg-slate-800/90 shadow-sm">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-300/70 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-700/70 text-xs uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Email</th>
@@ -397,15 +397,15 @@ export default function UsersAdminPage() {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-t border-slate-100 align-top">
+                <tr key={user.id} className="border-t border-slate-700 align-top">
                   <td className="px-4 py-3 font-medium">{user.name || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{user.email}</td>
+                  <td className="px-4 py-3 text-slate-300">{user.email}</td>
                   <td className="px-4 py-3">
                     <span
                       className={[
                         "inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize",
                         user.status === "ACTIVE"
-                          ? "bg-emerald-100 text-emerald-800"
+                          ? "bg-emerald-950 text-emerald-300"
                           : "bg-amber-100 text-amber-800",
                       ].join(" ")}
                     >
@@ -426,10 +426,10 @@ export default function UsersAdminPage() {
                     {isSiteScopedRole(user.role) ? (
                       <div className="flex flex-col gap-2">
                         {sites.length === 0 ? (
-                          <span className="text-slate-500">No sites available</span>
+                          <span className="text-slate-400">No sites available</span>
                         ) : (
                           sites.map((site) => (
-                            <label key={site.id} className="flex items-center gap-2 text-slate-700">
+                            <label key={site.id} className="flex items-center gap-2 text-slate-200">
                               <input
                                 type="checkbox"
                                 checked={(user.siteIds || []).includes(site.id)}

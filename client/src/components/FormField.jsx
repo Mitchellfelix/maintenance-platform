@@ -54,7 +54,7 @@ export default function FormField({
   };
 
   return (
-    <label className="block text-sm font-medium text-slate-700" htmlFor={name}>
+    <label className="block text-sm font-medium text-slate-200" htmlFor={name}>
       {label}
       {as === "select" ? (
         <select {...shared}>
@@ -78,7 +78,7 @@ export default function FormField({
             type="button"
             tabIndex={-1}
             onClick={() => setVisible((current) => !current)}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 transition hover:text-slate-800"
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition hover:text-slate-100"
             aria-label={visible ? "Hide password" : "Show password"}
           >
             <EyeIcon open={visible} />

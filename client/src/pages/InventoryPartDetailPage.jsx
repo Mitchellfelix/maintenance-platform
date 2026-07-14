@@ -105,9 +105,9 @@ export default function InventoryPartDetailPage() {
       <ErrorBanner message={error} />
 
       {!part ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           Part not found.{" "}
-          <Link to="/inventory" className="font-medium text-emerald-600">
+          <Link to="/inventory" className="font-medium text-emerald-400">
             Back to inventory
           </Link>
         </p>
@@ -116,7 +116,7 @@ export default function InventoryPartDetailPage() {
       {part && isAuthenticated && can("inventory:write") ? (
         <form
           onSubmit={handleSave}
-          className="grid gap-4 rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm md:grid-cols-2"
+          className="grid gap-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm md:grid-cols-2"
         >
           <FormField
             label="Unit (asset)"
@@ -165,32 +165,32 @@ export default function InventoryPartDetailPage() {
                 Delete part
               </button>
             ) : null}
-            <Link to="/inventory" className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
+            <Link to="/inventory" className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200">
               Back to inventory
             </Link>
           </div>
         </form>
       ) : part ? (
-        <div className="rounded-3xl border border-slate-300 bg-slate-200 p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
           <dl className="grid gap-4 text-sm md:grid-cols-2">
             <div>
-              <dt className="text-slate-500">Unit</dt>
+              <dt className="text-slate-400">Unit</dt>
               <dd className="font-medium">{part.asset?.name}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Site</dt>
+              <dt className="text-slate-400">Site</dt>
               <dd className="font-medium">{part.asset?.site?.name || "—"}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Part location</dt>
+              <dt className="text-slate-400">Part location</dt>
               <dd className="font-medium">{part.location}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Quantity</dt>
+              <dt className="text-slate-400">Quantity</dt>
               <dd className="font-medium">{part.quantity}</dd>
             </div>
             <div className="md:col-span-2">
-              <dt className="text-slate-500">Description</dt>
+              <dt className="text-slate-400">Description</dt>
               <dd className="font-medium">{part.description || "—"}</dd>
             </div>
           </dl>

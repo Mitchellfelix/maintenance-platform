@@ -27,10 +27,10 @@ export default function Layout() {
   const { user, logout, can, roleLabel } = useAuth();
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-300 text-slate-950">
-      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-300/35" />
-      <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-200/30 [animation-delay:-4s]" />
-      <div className="flow-orb bottom-0 left-1/3 h-72 w-72 bg-teal-200/25 [animation-delay:-8s]" />
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-500/20" />
+      <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-500/15 [animation-delay:-4s]" />
+      <div className="flow-orb bottom-0 left-1/3 h-72 w-72 bg-teal-500/15 [animation-delay:-8s]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
         <aside className="flex shrink-0 flex-col gap-6 rounded-[2rem] border border-white/10 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 p-6 text-white shadow-2xl shadow-slate-900/25 lg:w-64">

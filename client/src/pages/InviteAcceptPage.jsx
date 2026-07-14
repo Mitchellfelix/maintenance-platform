@@ -69,7 +69,7 @@ export default function InviteAcceptPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-300 px-4 py-10">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
       <div className="flow-orb -left-16 top-10 h-72 w-72 bg-emerald-300/40" />
       <div className="flow-card relative w-full max-w-md p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">EMAT</p>
@@ -78,7 +78,7 @@ export default function InviteAcceptPage() {
         <ErrorBanner message={error} />
         {!loading && invite ? (
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-300">
               You’re joining as <span className="font-medium">{getRoleLabel(invite.role)}</span>
               {" · "}
               {invite.email}
@@ -110,7 +110,7 @@ export default function InviteAcceptPage() {
           </form>
         ) : null}
         {!loading && !invite ? (
-          <p className="mt-4 text-sm text-slate-600">
+          <p className="mt-4 text-sm text-slate-300">
             <Link to="/login" className="font-medium text-emerald-700 hover:underline">
               Back to sign in
             </Link>

@@ -106,22 +106,22 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-300 px-4 py-8">
-      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-300/35" />
-      <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-200/30 [animation-delay:-4s]" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8">
+      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-500/20" />
+      <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-500/15 [animation-delay:-4s]" />
 
-      <div className="flow-page relative mx-auto w-full max-w-md rounded-[2rem] border border-slate-300 bg-slate-200/95 p-8 shadow-[0_20px_60px_rgb(15,23,42,0.12)] backdrop-blur-md">
-        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-600">
+      <div className="flow-page relative mx-auto w-full max-w-md rounded-[2rem] border border-slate-600 bg-slate-900/95 p-8 shadow-[0_20px_60px_rgb(2,6,23,0.55)] backdrop-blur-md">
+        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-400">
           EMAT Tracking Database
         </p>
         <h2 className="mt-3 text-3xl font-bold">{mode === "login" ? "Sign in" : "Request access"}</h2>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-slate-400">
           {mode === "login"
             ? "Use your account after an admin has approved your access request."
             : "Create an account request. An admin must approve it before you can sign in."}
         </p>
 
-        <div className="mt-6 flex gap-2 rounded-2xl bg-slate-300/80 p-1">
+        <div className="mt-6 flex gap-2 rounded-2xl bg-slate-700/80 p-1">
           {["login", "register"].map((value) => (
             <button
               key={value}
@@ -133,7 +133,7 @@ export default function LoginPage() {
               }}
               className={[
                 "flex-1 rounded-xl px-3 py-2 text-sm font-medium capitalize",
-                mode === value ? "bg-slate-100 text-slate-950 shadow-sm" : "text-slate-500",
+                mode === value ? "bg-slate-800 text-slate-100 shadow-sm" : "text-slate-400",
               ].join(" ")}
             >
               {value === "register" ? "Request access" : value}
@@ -155,15 +155,15 @@ export default function LoginPage() {
               />
               {isSiteScopedRole(form.requestedRole) ? (
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Sites</p>
+                  <p className="text-sm font-medium text-slate-200">Sites</p>
                   <div className="mt-2 space-y-2">
                     {sites.length === 0 ? (
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-slate-400">
                         No sites available yet. Choose Requester, or ask an admin to add sites first.
                       </p>
                     ) : (
                       sites.map((site) => (
-                        <label key={site.id} className="flex items-center gap-2 text-sm text-slate-700">
+                        <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
                           <input
                             type="checkbox"
                             checked={form.requestedSiteIds.includes(site.id)}
@@ -212,7 +212,7 @@ export default function LoginPage() {
 
           <ErrorBanner message={error} />
           {success ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            <div className="rounded-xl border border-emerald-800 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-100">
               {success}
             </div>
           ) : null}
