@@ -8,15 +8,33 @@ import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { getRoleLabel } from "../lib/permissions.js";
-import { formatDate } from "../utils/labels.js";
+import { formatDate, statusLabel } from "../utils/labels.js";
+
+function greenTagStatusLabel(status) {
+  if (status === "OPEN") return "awaiting";
+  if (status === "COMPLETED") return "complete";
+  return statusLabel(status);
+}
 
 const statusOptions = [
-  { value: "OPEN", label: "Open" },
+  { value: "OPEN", label: "Awaiting from field" },
   { value: "IN_PROGRESS", label: "In progress" },
   { value: "ON_HOLD", label: "On hold" },
-  { value: "COMPLETED", label: "Completed" },
+  { value: "COMPLETED", label: "Complete" },
   { value: "CANCELLED", label: "Cancelled" },
 ];
+
+const PIPELINE = [
+  { status: "OPEN", label: "Awaiting" },
+  { status: "IN_PROGRESS", label: "In progress" },
+  { status: "COMPLETED", label: "Complete" },
+];
+
+function pipelineStepIndex(status) {
+  if (status === "COMPLETED") return 2;
+  if (status === "IN_PROGRESS") return 1;
+  return 0;
+}
 
 export default function GreentaggingDetailPage() {
   const { id } = useParams();
@@ -207,11 +225,27 @@ export default function GreentaggingDetailPage() {
     }
   }
 
+  async function handleQuickStatus(status) {
+    setSubmitting(true);
+    setError("");
+    try {
+      const response = await api.patch(`/api/greentagging/${id}`, { status });
+      setAssignment(response.data);
+      setAssignmentForm((current) => ({ ...current, status: response.data.status }));
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to update status"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   if (loading) return <LoadingState label="Loading greentagging..." />;
   if (!assignment) return <ErrorBanner message={error || "Greentagging assignment not found"} />;
 
   const activeCase = assignment.cases.find((item) => item.id === activeCaseId);
   const writable = can("greentagging:write");
+  const stepIndex = pipelineStepIndex(assignment.status);
+  const casesDone = assignment.cases.filter((item) => item.status === "COMPLETED").length;
 
   return (
     <div>
@@ -222,18 +256,95 @@ export default function GreentaggingDetailPage() {
         }`}
         action={
           <div className="flex flex-wrap items-center gap-3">
-            <StatusBadge value={assignment.status} />
+            <StatusBadge value={assignment.status} label={greenTagStatusLabel(assignment.status)} />
             <Link
               to="/greentagging"
               className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium"
             >
-              Back to greentagging
+              Back to board
             </Link>
           </div>
         }
       />
 
       <ErrorBanner message={error} />
+
+      <section className="mb-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {PIPELINE.map((step, index) => {
+              const active = index === stepIndex;
+              const done = index < stepIndex;
+              return (
+                <div key={step.status} className="flex items-center gap-2">
+                  <span
+                    className={[
+                      "rounded-full px-3 py-1 text-xs font-semibold",
+                      active
+                        ? "bg-orange-500 text-white"
+                        : done
+                          ? "bg-orange-500/20 text-orange-200"
+                          : "bg-slate-700 text-slate-400",
+                    ].join(" ")}
+                  >
+                    {step.label}
+                  </span>
+                  {index < PIPELINE.length - 1 ? <span className="text-slate-600">→</span> : null}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-sm text-slate-400">
+            {casesDone}/{assignment.cases.length} process cases complete
+            {assignment.status === "ON_HOLD" ? " · Currently on hold" : ""}
+          </p>
+        </div>
+
+        {writable ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {assignment.status === "OPEN" || assignment.status === "ON_HOLD" ? (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => handleQuickStatus("IN_PROGRESS")}
+                className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+              >
+                Start greentagging
+              </button>
+            ) : null}
+            {assignment.status === "IN_PROGRESS" ? (
+              <>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleQuickStatus("COMPLETED")}
+                  className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  Mark complete
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleQuickStatus("ON_HOLD")}
+                  className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-60"
+                >
+                  Put on hold
+                </button>
+              </>
+            ) : null}
+            {assignment.status === "COMPLETED" ? (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => handleQuickStatus("OPEN")}
+                className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200 disabled:opacity-60"
+              >
+                Reopen to awaiting
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
 
       <div className="mb-6 grid gap-6 lg:grid-cols-2">
         <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">

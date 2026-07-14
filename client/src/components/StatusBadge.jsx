@@ -3,8 +3,8 @@ import { statusLabel } from "../utils/labels.js";
 const toneByValue = {
   OPERATIONAL: "bg-orange-950 text-orange-300 ring-orange-700/50",
   OPEN: "bg-sky-950 text-sky-300 ring-sky-700/50",
-  IN_PROGRESS: "bg-indigo-950 text-indigo-300 ring-indigo-700/50",
-  ON_HOLD: "bg-amber-950 text-amber-300 ring-amber-700/50",
+  IN_PROGRESS: "bg-amber-950 text-amber-300 ring-amber-700/50",
+  ON_HOLD: "bg-slate-800 text-slate-300 ring-slate-600/50",
   COMPLETED: "bg-orange-950 text-orange-300 ring-orange-700/50",
   CANCELLED: "bg-slate-800 text-slate-300 ring-slate-600/50",
   CRITICAL: "bg-rose-950 text-rose-300 ring-rose-700/50",
@@ -19,11 +19,11 @@ const toneByValue = {
   REJECTED: "bg-rose-950 text-rose-300 ring-rose-700/50",
 };
 
-export default function StatusBadge({ value }) {
+export default function StatusBadge({ value, label }) {
   const tone = toneByValue[value] || "bg-slate-800 text-slate-300 ring-slate-600/50";
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ${tone}`}>
-      {statusLabel(value)}
+      {label || statusLabel(value)}
     </span>
   );
 }
