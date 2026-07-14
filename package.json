@@ -20,7 +20,8 @@
     "app:launch": "bash scripts/run-desktop.sh",
     "app:stop": "bash scripts/stop-app.sh",
     "team:serve": "bash scripts/team-serve.sh",
-    "team:connect": "bash scripts/team-connect.sh"
+    "team:connect": "bash scripts/team-connect.sh",
+    "package:team-client": "bash scripts/package-team-client.sh"
   },
   "workspaces": [
     "client",

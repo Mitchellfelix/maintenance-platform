@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 PORT="${EMAT_PORT:-3000}"
+DOWNLOAD_ZIP="$ROOT/server/public/downloads/EMAT-mac.zip"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker is required. Install Docker Desktop and try again."
@@ -19,6 +20,13 @@ fi
 if [[ ! -f server/.env ]]; then
   cp server/.env.example server/.env
   echo "Created server/.env — set a strong JWT_SECRET before production use."
+fi
+
+if [[ ! -f "$DOWNLOAD_ZIP" ]]; then
+  echo "Mac team app zip not found — packaging now (one-time)..."
+  if ! bash "$ROOT/scripts/package-team-client.sh"; then
+    echo "WARNING: Could not package Mac download. Browser join will still work."
+  fi
 fi
 
 echo "Building and starting team server..."
@@ -54,26 +62,35 @@ detect_lan_ip() {
 }
 
 LAN_IP="$(detect_lan_ip)"
-TEAM_URL="http://localhost:${PORT}"
+LOCAL_URL="http://localhost:${PORT}"
+TEAM_URL="$LOCAL_URL"
 if [[ -n "$LAN_IP" ]]; then
   TEAM_URL="http://${LAN_IP}:${PORT}"
 fi
+JOIN_URL="${TEAM_URL}/join"
 
 echo ""
 echo "=============================================="
 echo " EMAT team server is running"
 echo "=============================================="
 echo ""
-echo "  Local:     http://localhost:${PORT}"
-if [[ -n "$LAN_IP" ]]; then
-  echo "  Team URL:  http://${LAN_IP}:${PORT}"
+echo "  Send your team this Join link:"
+echo "    ${JOIN_URL}"
+echo ""
+echo "  Browser app:     ${TEAM_URL}"
+echo "  Local (host):    ${LOCAL_URL}"
+if [[ -f "$DOWNLOAD_ZIP" ]]; then
+  echo "  Mac download:    ${TEAM_URL}/downloads/EMAT-mac.zip"
+else
+  echo "  Mac download:    missing — run: npm run package:team-client"
 fi
 echo ""
-echo "  Share with team members (after git clone):"
-echo "    npm run team:connect -- ${TEAM_URL}"
+echo "  Teammates: open the Join link → Download for Mac (or use browser)."
+echo "  No git / Node / Docker needed on teammate Macs."
 echo ""
-echo "  Or send the Team URL for browser access."
 echo "  Logs:  docker compose logs -f app"
 echo "  Stop:  docker compose --profile team down"
 echo "  NEVER use: docker compose down -v  (that deletes your database volume)"
 echo "  Backup: npm run db:backup"
+echo ""
+echo "  Advanced (developers): npm run team:connect -- ${TEAM_URL}"

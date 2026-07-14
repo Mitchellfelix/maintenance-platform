@@ -37,6 +37,7 @@ services:
         required: false
     volumes:
       - maintenance_platform_uploads:/app/server/uploads
+      - ./server/public/downloads:/app/server/public/downloads:ro
     depends_on:
       db:
         condition: service_healthy

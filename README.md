@@ -26,17 +26,23 @@ Then rebuild/relaunch so desktop clients pick up the UI.
 
 ## Team setup (shared URL)
 
-For one database and one URL for the whole team, see **[docs/TEAM-SETUP.md](docs/TEAM-SETUP.md)**.
+For one database and a **download-and-go** Join link for the whole team, see **[docs/TEAM-SETUP.md](docs/TEAM-SETUP.md)**.
 
 Quick version:
 
 ```bash
-# Host
-npm run team:serve          # prints Team URL, e.g. http://192.168.1.50:3000
+# Host (keep this machine / Docker running)
+npm run team:serve          # prints Join link, e.g. http://192.168.1.50:3000/join
 
-# Each team member
-npm run team:connect -- http://192.168.1.50:3000
-emat
+# Teammates
+# Open the Join link → “Open in this browser” or “Download for Mac”
+# (no git / Node / Docker on teammate machines)
+```
+
+Rebuild the Mac download after Electron client changes:
+
+```bash
+npm run package:team-client
 ```
 
 ## Local setup

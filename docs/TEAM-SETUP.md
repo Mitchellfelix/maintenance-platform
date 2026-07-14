@@ -1,17 +1,17 @@
-# EMAT — Team setup with one shared URL
+# EMAT — Team setup (download & go)
 
-Use this when everyone should hit **the same server and database**, not separate localhost copies.
+One shared server and database. Teammates **do not** need git, Node, or Docker.
 
 | Role | What they do | Result |
 |------|----------------|--------|
-| **Host (you)** | `npm run team:serve` | App on port 3000, reachable on your network |
-| **Team member** | `npm run team:connect -- <team-url>` then `emat` | Desktop app opens the shared URL |
+| **Host (you)** | `npm run team:serve` | Share the **Join link** |
+| **Team member** | Open Join link → browser or Download for Mac | Same data as everyone else |
 
 ---
 
-## Part 1 — Host: run the shared server (once)
+## Part 1 — Host: start the shared server
 
-**Requirements:** Docker Desktop, this repo on the host machine.
+**Requirements:** Docker Desktop, this repo on the host Mac.
 
 ```bash
 cd ~/maintenance-platform
@@ -21,13 +21,20 @@ cp server/.env.example server/.env   # if you have not already
 npm run team:serve
 ```
 
-The script prints a **Team URL** like `http://192.168.1.50:3000`. That is the address you send to everyone.
+The script packages the Mac app on first run (if needed), starts the stack, and prints:
 
-**Keep the host machine running** (or deploy to a cloud VM / internal server the same way). Team members only connect to that URL — they do not need local Postgres.
+```text
+Send your team this Join link:
+  http://192.168.x.x:3000/join
+```
 
-### Optional: custom hostname
+**Keep the host machine running** (or deploy the same stack on a company VM).
 
-If you use DNS (e.g. `http://emat.yourteam.local`), point it at the host and share that URL instead. HTTPS requires a reverse proxy (nginx, Caddy, etc.) in front of port 3000.
+### Optional: refresh the Mac download after client changes
+
+```bash
+npm run package:team-client
+```
 
 ### Stop the server
 
@@ -37,29 +44,27 @@ docker compose --profile team down
 
 ---
 
-## Part 2 — Team member: connect and launch
+## Part 2 — Team members (recommended)
 
-**Requirements:** Node.js 20+, Mac (for Dock app). **No Docker required** on member machines.
+Share only the **Join link**.
 
-```bash
-git clone <REPO-URL> ~/maintenance-platform
-cd ~/maintenance-platform
-npm run team:connect -- http://YOUR-TEAM-URL:3000
-```
+### A. Browser (fastest)
 
-Replace `http://YOUR-TEAM-URL:3000` with the URL the host gave you.
+1. Open `http://YOUR-TEAM-URL:3000/join`
+2. Click **Open in this browser**
+3. Sign in or **Request access**
 
-Then open a **new terminal tab** and:
+### B. Mac desktop app
 
-```bash
-emat
-```
+1. Open the Join link
+2. Click **Download for Mac**
+3. Unzip and open **EMAT Tracking Database**
+4. Paste the Team URL once (base URL, without `/join`)
+5. Sign in or **Request access**
 
-Or open **Applications → EMAT Tracking Database** from the Dock.
+Daily: open the app from Applications / Dock (or bookmark the Team URL).
 
-### Browser-only option
-
-Team members can skip the desktop install and open the **Team URL** in Chrome/Safari. Same app, same data.
+> Gatekeeper: if macOS blocks the app, right-click → **Open** the first time (internal unsigned build).
 
 ---
 
@@ -78,7 +83,6 @@ Team members can skip the desktop install and open the **Team URL** in Chrome/Sa
 On the **host** `server/.env`, configure one email path and/or Slack:
 
 ```bash
-# Review link in messages
 APP_URL=http://YOUR-TEAM-URL:3000
 
 # Option A — Resend
@@ -92,43 +96,25 @@ MAIL_FROM="EMAT <notifications@yourcompany.com>"
 # SMTP_PASS=app-password
 # MAIL_FROM="EMAT <emat@yourcompany.com>"
 
-# Slack Incoming Webhook
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
 ```
 
-Restart the host after editing env. Notifications (email still succeeds for the underlying action if mail fails):
-
-- New signup/elevation requests → email all **ACTIVE Admin + Ops Lead** users and/or Slack
-- Access request **approved** → email the requester that they can sign in
-- Admin **creates a user** (with credentials email on) → welcome email with temporary password
-- Invite accepted → confirmation email that the account is ready
-- **Forgot password** → one-time reset link (30 minutes; Sign in → Forgot password?)
-
-Admins and Ops Leads can approve under **Access requests** (Ops Leads cannot assign the Admin role). Without email configured, use `node scripts/reset-password.js user@company.com "new-password"` on the host.
+Restart the host after editing env.
 
 ---
 
 ## Copy-paste handoff (send this to your team)
 
-Replace `http://YOUR-TEAM-URL:3000` with your real Team URL from `npm run team:serve`.
-
 ```text
-EMAT Tracking Database — team setup
+EMAT Tracking Database — join the team
 
-Team URL: http://YOUR-TEAM-URL:3000
+1. Open: http://YOUR-TEAM-URL:3000/join
+2. Prefer browser? Click “Open in this browser”.
+3. Prefer Mac app? Click “Download for Mac” → unzip → open the app → paste Team URL once.
 
-Browser (quickest):
-  Open the Team URL above.
+First login: Request access, then wait for admin approval.
 
-Desktop app (Mac):
-  1. Install Node 20+
-  2. git clone <REPO-URL> && cd maintenance-platform
-  3. npm run team:connect -- http://YOUR-TEAM-URL:3000
-  4. New terminal tab → emat
-
-First time: Request access on login → wait for admin approval.
-
-Daily: emat  (or open the Team URL in your browser)
+Daily: same Join/browser link, or open the Mac app.
 ```
 
 ---
@@ -137,18 +123,28 @@ Daily: emat  (or open the Team URL in your browser)
 
 | Problem | Fix |
 |---------|-----|
-| Cannot reach Team URL | Same Wi‑Fi/VPN as host; host firewall allows port 3000 |
-| `team:connect` works but `emat` fails | New terminal tab; or `export PATH="$HOME/.local/bin:$PATH"` |
-| Host IP changed | Re-run `npm run team:serve` for new IP; members re-run `team:connect` with new URL |
+| Cannot reach Join link | Same Wi‑Fi/VPN as host; host firewall allows port 3000 |
+| No Mac download button | Host runs `npm run package:team-client`, then refresh Join page |
+| App can’t reach server | Paste Team URL **without** `/join`; confirm host is still running |
+| Host IP changed | Re-run `npm run team:serve`; send the new Join link |
 | Old UI after update | Host: `docker compose --profile team up -d --build` |
 
 ---
 
-## Local-only vs team mode
+## Advanced / developers
+
+Clone-based setup (only if you need to develop against the shared server):
+
+```bash
+git clone https://github.com/Mitchellfelix/maintenance-platform.git
+cd maintenance-platform
+npm run team:connect -- http://YOUR-TEAM-URL:3000
+emat
+```
 
 | Mode | Command | URL |
 |------|---------|-----|
+| **Team (shared DB)** | Host: `npm run team:serve` · Members: Join link | Your Team URL |
 | **Solo (local DB)** | `npm run app:install` then `emat` | http://localhost:3000 |
-| **Team (shared DB)** | Host: `npm run team:serve` · Member: `npm run team:connect -- <url>` | Your Team URL |
 
-`team:connect` writes `EMAT_APP_URL` in `server/.env` so the desktop app skips local Docker and loads the shared server.
+`team:connect` writes `EMAT_APP_URL` in `server/.env` so the developer Dock app skips local Docker and loads the shared server.

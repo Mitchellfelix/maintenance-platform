@@ -1,0 +1,42 @@
+{
+  "name": "emat-tracking-database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EMAT Tracking Database team client — connects to a shared team server.",
+  "main": "team-client.js",
+  "author": "EMAT",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --mac zip --publish never"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.emat.tracking-database.team",
+    "productName": "EMAT Tracking Database",
+    "copyright": "Copyright © EMAT",
+    "directories": {
+      "output": "../dist/team-client"
+    },
+    "files": [
+      "team-client.js",
+      "team-preload.js",
+      "team-setup.html"
+    ],
+    "mac": {
+      "category": "public.app-category.business",
+      "target": [
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        }
+      ],
+      "identity": null,
+      "gatekeeperAssess": false
+    },
+    "artifactName": "EMAT-mac.${ext}"
+  }
+}

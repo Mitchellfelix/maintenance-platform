@@ -269,6 +269,6 @@ If the repo is moved, run **`npm run app:install`** again from the new location.
 
 ---
 
-## Future: true installer (.dmg)
+## Future: Windows / notarized DMG
 
-Today recipients still need Node + Docker + the source tree on disk. A packaged `.dmg` (e.g. via electron-builder) could reduce setup further but would still need either bundled Postgres or a shared `EMAT_APP_URL`.
+Mac zip + Join page is the team client for v1. Windows installers and Apple notarization can follow; teammates who can’t use the Mac zip should use the browser button on `/join`.
