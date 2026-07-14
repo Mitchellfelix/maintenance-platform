@@ -17,9 +17,13 @@ export default function GreentagChecklistPanel({
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState(assignment?.instructions || "");
   const [newLabel, setNewLabel] = useState("");
+  const [editingId, setEditingId] = useState("");
+  const [editLabel, setEditLabel] = useState("");
 
   useEffect(() => {
     setNotes(assignment?.instructions || "");
+    setEditingId("");
+    setEditLabel("");
   }, [assignment?.id, assignment?.instructions]);
 
   const items = assignment?.checklistItems || [];
@@ -74,7 +78,7 @@ export default function GreentagChecklistPanel({
               {assignment.asset?.name || "Asset"}
               {assignment.asset?.site?.name ? ` · ${assignment.asset.site.name}` : ""}
               {" · "}
-              Check steps off and attach photos here.
+              Edit steps, photos, and notes anytime — including completed jobs.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -181,13 +185,75 @@ export default function GreentagChecklistPanel({
                     aria-label={item.label}
                   />
                   <div className="min-w-0 flex-1">
-                    <p
-                      className={
-                        done ? "text-sm text-slate-400 line-through" : "text-sm font-medium text-slate-100"
-                      }
-                    >
-                      {item.label}
-                    </p>
+                    {writable && editingId === item.id ? (
+                      <form
+                        className="flex flex-wrap items-center gap-2"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          const label = editLabel.trim();
+                          if (!label) return;
+                          run(async () => {
+                            const response = await api.patch(
+                              `/api/greentagging/${assignmentId}/checklist/${item.id}`,
+                              { label },
+                            );
+                            setEditingId("");
+                            setEditLabel("");
+                            return response.data;
+                          }, "Unable to save checklist item");
+                        }}
+                      >
+                        <input
+                          className="flow-input mt-0 min-w-[12rem] flex-1 text-sm"
+                          value={editLabel}
+                          onChange={(e) => setEditLabel(e.target.value)}
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          disabled={busy}
+                          className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingId("");
+                            setEditLabel("");
+                          }}
+                          className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-300"
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <p
+                          className={
+                            done
+                              ? "text-sm text-slate-400 line-through"
+                              : "text-sm font-medium text-slate-100"
+                          }
+                        >
+                          {item.label}
+                        </p>
+                        {writable ? (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                              setEditingId(item.id);
+                              setEditLabel(item.label);
+                            }}
+                            className="text-xs font-medium text-orange-300 hover:underline disabled:opacity-60"
+                          >
+                            Edit text
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
                     {done && item.completedBy ? (
                       <p className="mt-1 text-xs text-slate-500">
                         Checked by {item.completedBy.name || item.completedBy.email}

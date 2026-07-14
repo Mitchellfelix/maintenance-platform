@@ -188,6 +188,7 @@ export default function GreentaggingPage() {
   const [showCancelled, setShowCancelled] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedId, setSelectedId] = useState("");
+  const [boardFilter, setBoardFilter] = useState("all");
 
   const writable = can("greentagging:write");
 
@@ -208,11 +209,7 @@ export default function GreentaggingPage() {
 
       setSelectedId((current) => {
         if (current && list.some((item) => item.id === current)) return current;
-        const preferred =
-          list.find((item) => item.status === "IN_PROGRESS") ||
-          list.find((item) => item.status === "OPEN" || item.status === "ON_HOLD") ||
-          list[0];
-        return preferred?.id || "";
+        return list[0]?.id || "";
       });
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load greentagging"));
@@ -237,13 +234,36 @@ export default function GreentaggingPage() {
   }, [assignments]);
 
   const columns = useMemo(() => {
+    const statusSets = {
+      all: null,
+      active: new Set(["OPEN", "ON_HOLD", "IN_PROGRESS"]),
+      complete: new Set(["COMPLETED"]),
+    };
+    const allowed = statusSets[boardFilter];
+
     return BOARD_COLUMNS.map((column) => ({
       ...column,
       items: assignments
         .filter((item) => column.statuses.includes(item.status))
+        .filter((item) => !allowed || allowed.has(item.status))
         .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)),
-    }));
-  }, [assignments]);
+    })).filter((column) => {
+      if (boardFilter === "active") return column.id !== "complete";
+      if (boardFilter === "complete") return column.id === "complete";
+      return true;
+    });
+  }, [assignments, boardFilter]);
+
+  const sortedAssignments = useMemo(
+    () =>
+      [...assignments].sort((a, b) => {
+        const order = { IN_PROGRESS: 0, OPEN: 1, ON_HOLD: 2, COMPLETED: 3, CANCELLED: 4 };
+        const byStatus = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+        if (byStatus !== 0) return byStatus;
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
+      }),
+    [assignments],
+  );
 
   const cancelledItems = useMemo(
     () => assignments.filter((item) => item.status === "CANCELLED"),
@@ -321,7 +341,7 @@ export default function GreentaggingPage() {
     <div>
       <PageHeader
         title="Greentagging"
-        description="Click a job on the board — its overall checklist opens underneath so you can check steps and add photos."
+        description="Open any job — awaiting, in progress, or complete — to edit its checklist, photos, and notes."
         action={
           isAuthenticated && writable ? (
             <button
@@ -336,6 +356,31 @@ export default function GreentaggingPage() {
       />
 
       <ErrorBanner message={error} />
+
+      <div className="mb-6 rounded-3xl border-2 border-orange-500/40 bg-orange-950/20 p-4 shadow-sm">
+        <FormField
+          label="Choose any job to edit (including completed)"
+          name="selectedJob"
+          as="select"
+          value={selectedId}
+          onChange={(event) => {
+            setSelectedId(event.target.value);
+            requestAnimationFrame(() => {
+              document.getElementById("overall-checklist")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
+          options={[
+            { value: "", label: assignments.length ? "Select a greentagging job…" : "No jobs yet" },
+            ...sortedAssignments.map((item) => ({
+              value: item.id,
+              label: `${item.title} · ${item.asset?.name || "Asset"} · ${greenTagStatusLabel(item.status)}`,
+            })),
+          ]}
+        />
+        <p className="mt-2 text-xs text-slate-400">
+          Pick from this list anytime. Checklist edits work for every status — not only active work.
+        </p>
+      </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         {[
@@ -353,7 +398,7 @@ export default function GreentaggingPage() {
       <div className="mb-6 flex flex-wrap items-end gap-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-4 shadow-sm">
         <div className="min-w-[14rem] flex-1">
           <FormField
-            label="Filter by asset"
+            label="Filter board by asset"
             name="assetFilter"
             as="select"
             value={assetFilter}
@@ -364,6 +409,20 @@ export default function GreentaggingPage() {
                 value: asset.id,
                 label: `${asset.name}${asset.site?.name ? ` · ${asset.site.name}` : ""}`,
               })),
+            ]}
+          />
+        </div>
+        <div className="min-w-[12rem]">
+          <FormField
+            label="Board view"
+            name="boardFilter"
+            as="select"
+            value={boardFilter}
+            onChange={(event) => setBoardFilter(event.target.value)}
+            options={[
+              { value: "all", label: "All statuses" },
+              { value: "active", label: "Active only (awaiting + in progress)" },
+              { value: "complete", label: "Complete only" },
             ]}
           />
         </div>
