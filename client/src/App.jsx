@@ -28,7 +28,18 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route element={<Layout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/invite/:token" element={<InviteAcceptPage />} />
+
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/" element={<Dashboard />} />
             <Route path="/sites" element={<SitesPage />} />
             <Route path="/sites/:id" element={<SiteDetailPage />} />
@@ -40,14 +51,7 @@ export default function App() {
             <Route path="/inventory/:id" element={<InventoryPartDetailPage />} />
             <Route path="/sops" element={<SopsPage />} />
             <Route path="/sops/:id" element={<SopDetailPage />} />
-            <Route
-              path="/access/request"
-              element={
-                <ProtectedRoute>
-                  <AccessRequestPage />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/access/request" element={<AccessRequestPage />} />
             <Route
               path="/admin/users"
               element={
@@ -73,10 +77,7 @@ export default function App() {
               }
             />
           </Route>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-          <Route path="/invite/:token" element={<InviteAcceptPage />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

@@ -80,7 +80,7 @@ The React app includes:
 - **Dashboard** — metrics, recent assets, recent work orders (read-only)
 - **Sites / Assets / Work Orders** — list views, inline create forms (when signed in), detail pages with edit and delete
 
-Browse data without signing in. Create, edit, and delete require an authenticated session.
+You must sign in to use the app. Unauthenticated visits are redirected to `/login`.
 
 ## Production build
 

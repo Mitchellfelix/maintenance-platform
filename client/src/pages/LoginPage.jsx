@@ -234,10 +234,6 @@ export default function LoginPage() {
                 : "Submit access request"}
           </button>
         </form>
-
-        <Link to="/" className="mt-6 inline-block text-sm text-slate-500 hover:text-slate-800">
-          Back to dashboard
-        </Link>
       </div>
     </div>
   );
