@@ -35,6 +35,8 @@ services:
     env_file:
       - path: server/.env
         required: false
+    volumes:
+      - maintenance_platform_uploads:/app/server/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -53,3 +55,4 @@ services:
 
 volumes:
   maintenance_platform_pgdata:
+  maintenance_platform_uploads:

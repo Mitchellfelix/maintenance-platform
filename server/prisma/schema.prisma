@@ -85,6 +85,7 @@ model User {
   passwordResets      PasswordReset[]
   greenTagAssignments GreenTagAssignment[] @relation("GreenTagAssignee")
   greenTagChecklistCompletions GreenTagChecklistItem[] @relation("GreenTagChecklistCompleter")
+  greenTagChecklistPhotos GreenTagChecklistPhoto[] @relation("GreenTagChecklistPhotoUploader")
 }
 
 // ——— Locations & equipment ———
@@ -318,8 +319,27 @@ model GreenTagChecklistItem {
   completedBy  User?              @relation("GreenTagChecklistCompleter", fields: [completedById], references: [id], onDelete: SetNull)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
+  photos       GreenTagChecklistPhoto[]
 
   @@index([assignmentId])
+}
+
+model GreenTagChecklistPhoto {
+  id              String                @id @default(cuid())
+  checklistItemId String
+  checklistItem   GreenTagChecklistItem @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  /// Public URL path, e.g. /uploads/greentagging/<file>.
+  url             String
+  filename        String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int
+  uploadedById    String?
+  uploadedBy      User?                 @relation("GreenTagChecklistPhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime              @default(now())
+
+  @@index([checklistItemId])
+  @@index([uploadedById])
 }
 
 /// Process case within a greentagging effort — shown as subtabs on the assignment.

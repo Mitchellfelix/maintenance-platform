@@ -22,6 +22,7 @@ const {
   DEFAULT_GREEN_TAG_CHECKLIST,
   applyStatusCompletedAt,
 } = require("../services/greenTagDefaults");
+const { handleMulterUpload, publicUrlFor, deleteUploadedFile } = require("../lib/uploads");
 
 const router = express.Router();
 
@@ -41,6 +42,12 @@ const assignmentInclude = {
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     include: {
       completedBy: { select: { id: true, name: true, email: true } },
+      photos: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          uploadedBy: { select: { id: true, name: true, email: true } },
+        },
+      },
     },
   },
 };
@@ -480,6 +487,10 @@ router.delete("/:id/checklist/:itemId", ...greentaggingWrite, async (req, res, n
     const item = (existing.checklistItems || []).find((row) => row.id === req.params.itemId);
     if (!item) return res.status(404).json({ error: "Checklist item not found" });
 
+    for (const photo of item.photos || []) {
+      deleteUploadedFile(photo.filename);
+    }
+
     await prisma.greenTagChecklistItem.delete({ where: { id: item.id } });
 
     const assignment = await getAssignmentForUser(existing.id, req.user);
@@ -500,5 +511,103 @@ router.delete("/:id/checklist/:itemId", ...greentaggingWrite, async (req, res, n
     next(error);
   }
 });
+
+router.post(
+  "/:id/checklist/:itemId/photos",
+  ...greentaggingWrite,
+  handleMulterUpload,
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Photo file is required" });
+      }
+
+      const existing = await getAssignmentForUser(req.params.id, req.user);
+      if (!existing) {
+        deleteUploadedFile(req.file.filename);
+        return res.status(404).json({ error: "Greentagging assignment not found" });
+      }
+      await assertSiteAccess(req.user, existing.asset.siteId);
+
+      const item = (existing.checklistItems || []).find((row) => row.id === req.params.itemId);
+      if (!item) {
+        deleteUploadedFile(req.file.filename);
+        return res.status(404).json({ error: "Checklist item not found" });
+      }
+
+      await prisma.greenTagChecklistPhoto.create({
+        data: {
+          checklistItemId: item.id,
+          url: publicUrlFor(req.file.filename),
+          filename: req.file.filename,
+          originalName: req.file.originalname || req.file.filename,
+          mimeType: req.file.mimetype,
+          sizeBytes: req.file.size,
+          uploadedById: req.user.id,
+        },
+      });
+
+      const assignment = await getAssignmentForUser(existing.id, req.user);
+
+      await recordAudit({
+        action: "greentagging.checklist.photo.created",
+        entityType: "greentagging-photo",
+        entityId: item.id,
+        actorId: req.user.id,
+        metadata: {
+          assignmentId: existing.id,
+          checklistItemId: item.id,
+          filename: req.file.filename,
+        },
+      });
+
+      res.status(201).json(assignment);
+    } catch (error) {
+      if (req.file?.filename) deleteUploadedFile(req.file.filename);
+      if (error.status === 403) {
+        return res.status(403).json({ error: "Forbidden", message: error.message });
+      }
+      next(error);
+    }
+  },
+);
+
+router.delete(
+  "/:id/checklist/:itemId/photos/:photoId",
+  ...greentaggingWrite,
+  async (req, res, next) => {
+    try {
+      const existing = await getAssignmentForUser(req.params.id, req.user);
+      if (!existing) return res.status(404).json({ error: "Greentagging assignment not found" });
+      await assertSiteAccess(req.user, existing.asset.siteId);
+
+      const item = (existing.checklistItems || []).find((row) => row.id === req.params.itemId);
+      if (!item) return res.status(404).json({ error: "Checklist item not found" });
+
+      const photo = (item.photos || []).find((row) => row.id === req.params.photoId);
+      if (!photo) return res.status(404).json({ error: "Photo not found" });
+
+      await prisma.greenTagChecklistPhoto.delete({ where: { id: photo.id } });
+      deleteUploadedFile(photo.filename);
+
+      const assignment = await getAssignmentForUser(existing.id, req.user);
+
+      await recordAudit({
+        action: "greentagging.checklist.photo.deleted",
+        entityType: "greentagging-photo",
+        entityId: photo.id,
+        actorId: req.user.id,
+        metadata: { assignmentId: existing.id, checklistItemId: item.id },
+      });
+
+      res.json(assignment);
+    } catch (error) {
+      if (error.status === 403) {
+        return res.status(403).json({ error: "Forbidden", message: error.message });
+      }
+      next(error);
+    }
+  },
+);
 
 module.exports = router;

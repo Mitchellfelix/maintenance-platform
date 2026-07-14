@@ -16,13 +16,16 @@ const accessRequestRoutes = require("./routes/accessRequests");
 const inventoryRoutes = require("./routes/inventory");
 const sopRoutes = require("./routes/sops");
 const greenTagRoutes = require("./routes/greentagging");
+const { ensureUploadDirs, UPLOAD_ROOT } = require("./lib/uploads");
 
 function createApp() {
+  ensureUploadDirs();
   const app = express();
 
   app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
   app.use(express.json());
   app.use(express.static(path.join(__dirname, "..", "public")));
+  app.use("/uploads", express.static(UPLOAD_ROOT));
 
   app.use("/api/auth", authRoutes);
   app.use("/api/users", userRoutes);

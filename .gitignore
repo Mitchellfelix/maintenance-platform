@@ -1,3 +1,5 @@
+server/uploads/*
+!server/uploads/.gitkeep
 backups/*
 !backups/.gitkeep
 node_modules/

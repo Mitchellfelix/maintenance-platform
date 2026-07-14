@@ -473,8 +473,8 @@ export default function GreentaggingDetailPage() {
           <div>
             <h3 className="text-lg font-semibold">Overall checklist</h3>
             <p className="mt-1 text-sm text-slate-400">
-              Check off how-to steps for this greentagging effort. Case tabs below still have their own stage
-              directions.
+              Check off how-to steps for this greentagging effort. Attach photos to any step as proof of work.
+              Case tabs below still have their own stage directions.
             </p>
           </div>
           {assignment.checklistItems?.length ? (
@@ -552,73 +552,149 @@ export default function GreentaggingDetailPage() {
             ) : null}
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {assignment.checklistItems.map((item) => {
               const done = Boolean(item.completedAt);
+              const photos = item.photos || [];
               return (
                 <li
                   key={item.id}
                   className={[
-                    "flex items-start gap-3 rounded-2xl border px-3 py-3",
+                    "rounded-2xl border px-3 py-3",
                     done ? "border-orange-500/30 bg-orange-950/20" : "border-slate-700 bg-slate-900/50",
                   ].join(" ")}
                 >
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-slate-500"
-                    checked={done}
-                    disabled={!writable || submitting}
-                    onChange={async (event) => {
-                      setSubmitting(true);
-                      setError("");
-                      try {
-                        const response = await api.patch(
-                          `/api/greentagging/${id}/checklist/${item.id}`,
-                          { completed: event.target.checked },
-                        );
-                        setAssignment(response.data);
-                      } catch (err) {
-                        setError(getErrorMessage(err, "Unable to update checklist item"));
-                      } finally {
-                        setSubmitting(false);
-                      }
-                    }}
-                    aria-label={item.label}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className={done ? "text-sm text-slate-400 line-through" : "text-sm text-slate-100"}>
-                      {item.label}
-                    </p>
-                    {done && item.completedBy ? (
-                      <p className="mt-1 text-xs text-slate-500">
-                        Checked by {item.completedBy.name || item.completedBy.email}
-                      </p>
-                    ) : null}
-                  </div>
-                  {writable ? (
-                    <button
-                      type="button"
-                      disabled={submitting}
-                      onClick={async () => {
-                        if (!window.confirm("Remove this checklist item?")) return;
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-slate-500"
+                      checked={done}
+                      disabled={!writable || submitting}
+                      onChange={async (event) => {
                         setSubmitting(true);
                         setError("");
                         try {
-                          const response = await api.delete(
+                          const response = await api.patch(
                             `/api/greentagging/${id}/checklist/${item.id}`,
+                            { completed: event.target.checked },
                           );
                           setAssignment(response.data);
                         } catch (err) {
-                          setError(getErrorMessage(err, "Unable to remove checklist item"));
+                          setError(getErrorMessage(err, "Unable to update checklist item"));
                         } finally {
                           setSubmitting(false);
                         }
                       }}
-                      className="text-xs text-rose-300 hover:underline disabled:opacity-60"
-                    >
-                      Remove
-                    </button>
-                  ) : null}
+                      aria-label={item.label}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className={done ? "text-sm text-slate-400 line-through" : "text-sm text-slate-100"}>
+                        {item.label}
+                      </p>
+                      {done && item.completedBy ? (
+                        <p className="mt-1 text-xs text-slate-500">
+                          Checked by {item.completedBy.name || item.completedBy.email}
+                        </p>
+                      ) : null}
+
+                      {photos.length > 0 ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {photos.map((photo) => (
+                            <div key={photo.id} className="group relative">
+                              <a href={photo.url} target="_blank" rel="noopener noreferrer">
+                                <img
+                                  src={photo.url}
+                                  alt={photo.originalName || "Checklist photo"}
+                                  className="h-20 w-20 rounded-xl border border-slate-600 object-cover"
+                                />
+                              </a>
+                              {writable ? (
+                                <button
+                                  type="button"
+                                  disabled={submitting}
+                                  onClick={async () => {
+                                    if (!window.confirm("Remove this photo?")) return;
+                                    setSubmitting(true);
+                                    setError("");
+                                    try {
+                                      const response = await api.delete(
+                                        `/api/greentagging/${id}/checklist/${item.id}/photos/${photo.id}`,
+                                      );
+                                      setAssignment(response.data);
+                                    } catch (err) {
+                                      setError(getErrorMessage(err, "Unable to remove photo"));
+                                    } finally {
+                                      setSubmitting(false);
+                                    }
+                                  }}
+                                  className="absolute -right-1 -top-1 rounded-full bg-slate-950/90 px-1.5 text-xs text-rose-300 ring-1 ring-rose-400/40"
+                                  aria-label="Remove photo"
+                                >
+                                  ×
+                                </button>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {writable ? (
+                        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800">
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic"
+                            className="hidden"
+                            disabled={submitting}
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              event.target.value = "";
+                              if (!file) return;
+                              setSubmitting(true);
+                              setError("");
+                              try {
+                                const body = new FormData();
+                                body.append("photo", file);
+                                const response = await api.post(
+                                  `/api/greentagging/${id}/checklist/${item.id}/photos`,
+                                  body,
+                                );
+                                setAssignment(response.data);
+                              } catch (err) {
+                                setError(getErrorMessage(err, "Unable to upload photo"));
+                              } finally {
+                                setSubmitting(false);
+                              }
+                            }}
+                          />
+                          Add photo
+                        </label>
+                      ) : null}
+                    </div>
+                    {writable ? (
+                      <button
+                        type="button"
+                        disabled={submitting}
+                        onClick={async () => {
+                          if (!window.confirm("Remove this checklist item?")) return;
+                          setSubmitting(true);
+                          setError("");
+                          try {
+                            const response = await api.delete(
+                              `/api/greentagging/${id}/checklist/${item.id}`,
+                            );
+                            setAssignment(response.data);
+                          } catch (err) {
+                            setError(getErrorMessage(err, "Unable to remove checklist item"));
+                          } finally {
+                            setSubmitting(false);
+                          }
+                        }}
+                        className="text-xs text-rose-300 hover:underline disabled:opacity-60"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}
