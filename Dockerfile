@@ -12,6 +12,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package*.json ./
 COPY server/package*.json ./server/
+COPY server/prisma ./server/prisma
 RUN npm install --omit=dev --workspace server
 COPY --from=build /app/server ./server
 COPY server/docker-entrypoint.sh ./docker-entrypoint.sh

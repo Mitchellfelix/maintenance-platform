@@ -29,6 +29,13 @@ cat >"$PLIST" <<EOF
     <integer>120</integer>
     <key>WorkingDirectory</key>
     <string>${ROOT}</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>${HOME}/.nvm/versions/node/v22.22.3/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+      <key>EMAT_PORT</key>
+      <string>3000</string>
+    </dict>
     <key>StandardOutPath</key>
     <string>${LOG_DIR}/launchagent.out.log</string>
     <key>StandardErrorPath</key>
