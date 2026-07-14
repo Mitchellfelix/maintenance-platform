@@ -33,14 +33,14 @@ docker compose --profile team up -d --build
 echo "Waiting for EMAT to become ready..."
 tries=0
 while (( tries < 90 )); do
-  if curl -fsS "http://localhost:${PORT}/api/health" >/dev/null 2>&1; then
+  if curl -fsS "http://localhost:${PORT}/api/health/db" >/dev/null 2>&1; then
     break
   fi
   sleep 1
   tries=$((tries + 1))
 done
 
-if ! curl -fsS "http://localhost:${PORT}/api/health" >/dev/null 2>&1; then
+if ! curl -fsS "http://localhost:${PORT}/api/health/db" >/dev/null 2>&1; then
   echo "Server did not become ready. Check: docker compose logs app"
   exit 1
 fi

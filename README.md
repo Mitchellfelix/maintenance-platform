@@ -165,6 +165,15 @@ Desktop launch and `team:serve` also take a backup before schema updates when Do
 - `db:push` / interactive `db:migrate` are blocked unless `EMAT_ALLOW_DESTROY_DATA=YES` **and** the DB name ends with `_test`.
 - Prefer `npm run db:deploy:safe` over raw migrate on machines with real data.
 
+## Crash resilience
+
+- Desktop Electron polls `/api/health/db` and restarts the local stack if it goes down
+- Renderer crashes reload the window; a React ErrorBoundary offers **Reload app**
+- API maps DB connection failures to HTTP 503; fatal Node errors exit so supervisors can restart
+- Team Docker: Postgres + app use `restart: unless-stopped` with DB/app healthchecks
+- Backups remain the recovery path if something still goes wrong — run `npm run db:backup` after important data entry
+
+
 ## Docker (full app)
 
 ```bash

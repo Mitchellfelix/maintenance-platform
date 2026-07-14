@@ -50,6 +50,21 @@ function createApp() {
       return res.status(400).json({ error: "Related record not found" });
     }
 
+    // Prisma / driver connection failures → unavailable, not a generic 500
+    const connectionCodes = new Set([
+      "P1000",
+      "P1001",
+      "P1002",
+      "P1008",
+      "P1009",
+      "P1010",
+      "P1011",
+      "P1017",
+    ]);
+    if (connectionCodes.has(err.code) || /can't reach database|ECONNREFUSED|Connection refused/i.test(err.message || "")) {
+      return res.status(503).json({ error: "Database unavailable. Retry in a moment." });
+    }
+
     const status = err.status || 500;
     res.status(status).json({
       error: status === 500 ? "Internal server error" : err.message,

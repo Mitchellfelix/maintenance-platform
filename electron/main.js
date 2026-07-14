@@ -7,9 +7,15 @@ const { spawn } = require("child_process");
 const ROOT = path.join(__dirname, "..");
 const APP_NAME = "EMAT Tracking Database";
 const DEFAULT_PORT = process.env.EMAT_PORT || "3000";
+const HEALTH_PATH = "/api/health/db";
+const WATCH_INTERVAL_MS = 8000;
 
 let mainWindow = null;
 let stackStarted = false;
+let loadUrl = `http://localhost:${DEFAULT_PORT}`;
+let isLocalMode = true;
+let healthTimer = null;
+let recovering = false;
 
 function readAppUrl() {
   let url = `http://localhost:${DEFAULT_PORT}`;
@@ -30,36 +36,42 @@ function isLocalAppUrl(url) {
   return /^https?:\/\/localhost(?::|\/|$)/.test(url) || /^https?:\/\/127\.0\.0\.1(?::|\/|$)/.test(url);
 }
 
-function waitForHealth(baseUrl, attempts = 60) {
-  const healthUrl = new URL("/api/health", baseUrl);
+function pingHealth(baseUrl, timeoutMs = 2500) {
+  const healthUrl = new URL(HEALTH_PATH, baseUrl);
 
+  return new Promise((resolve) => {
+    const request = http.get(healthUrl, { timeout: timeoutMs }, (response) => {
+      response.resume();
+      resolve(response.statusCode === 200);
+    });
+
+    request.on("timeout", () => {
+      request.destroy();
+      resolve(false);
+    });
+    request.on("error", () => resolve(false));
+  });
+}
+
+function waitForHealth(baseUrl, attempts = 60) {
   return new Promise((resolve, reject) => {
     let tries = 0;
 
-    function ping() {
-      const request = http.get(healthUrl, (response) => {
-        response.resume();
-        if (response.statusCode === 200) {
-          resolve();
-        } else if (tries >= attempts) {
-          reject(new Error(`Health check failed with status ${response.statusCode}`));
-        } else {
-          tries += 1;
-          setTimeout(ping, 500);
-        }
-      });
-
-      request.on("error", () => {
-        if (tries >= attempts) {
-          reject(new Error(`Cannot reach ${healthUrl}`));
-          return;
-        }
-        tries += 1;
-        setTimeout(ping, 500);
-      });
+    async function attempt() {
+      const ok = await pingHealth(baseUrl);
+      if (ok) {
+        resolve();
+        return;
+      }
+      tries += 1;
+      if (tries >= attempts) {
+        reject(new Error(`Cannot reach ${new URL(HEALTH_PATH, baseUrl)}`));
+        return;
+      }
+      setTimeout(attempt, 500);
     }
 
-    ping();
+    attempt();
   });
 }
 
@@ -80,6 +92,44 @@ function startStack() {
       }
     });
   });
+}
+
+async function recoverStack() {
+  if (!isLocalMode || recovering) {
+    return;
+  }
+  recovering = true;
+  try {
+    await startStack();
+    await waitForHealth(loadUrl, 40);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.reload();
+    }
+  } catch (error) {
+    console.error("EMAT recovery failed:", error.message);
+  } finally {
+    recovering = false;
+  }
+}
+
+function startHealthWatch() {
+  stopHealthWatch();
+  healthTimer = setInterval(async () => {
+    const ok = await pingHealth(loadUrl);
+    if (ok) {
+      return;
+    }
+    if (isLocalMode) {
+      void recoverStack();
+    }
+  }, WATCH_INTERVAL_MS);
+}
+
+function stopHealthWatch() {
+  if (healthTimer) {
+    clearInterval(healthTimer);
+    healthTimer = null;
+  }
 }
 
 function resolveDockIcon() {
@@ -107,7 +157,7 @@ function createWindow(url) {
     minWidth: 960,
     minHeight: 640,
     title: APP_NAME,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#020617",
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
@@ -116,7 +166,30 @@ function createWindow(url) {
     },
   });
 
+  let loadRetries = 0;
   mainWindow.loadURL(url);
+
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+    if (errorCode === -3) {
+      return; // aborted
+    }
+    console.error("Window failed to load:", errorCode, errorDescription);
+    if (loadRetries < 5) {
+      loadRetries += 1;
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.reload();
+        }
+      }, 1000 * loadRetries);
+    }
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    console.error("Renderer process gone:", details);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.reload();
+    }
+  });
 
   mainWindow.on("closed", () => {
     mainWindow = null;
@@ -136,11 +209,11 @@ function focusWindow() {
 
 async function boot() {
   const appUrl = readAppUrl();
-  const localMode = isLocalAppUrl(appUrl);
-  const loadUrl = localMode ? `http://localhost:${DEFAULT_PORT}` : appUrl;
+  isLocalMode = isLocalAppUrl(appUrl);
+  loadUrl = isLocalMode ? `http://localhost:${DEFAULT_PORT}` : appUrl;
 
   try {
-    if (localMode) {
+    if (isLocalMode) {
       await startStack();
       await waitForHealth(loadUrl);
     } else {
@@ -155,7 +228,13 @@ async function boot() {
     return;
   }
 
-  createWindow(loadUrl);
+  if (!mainWindow) {
+    createWindow(loadUrl);
+  } else if (!mainWindow.isDestroyed()) {
+    mainWindow.loadURL(loadUrl);
+  }
+
+  startHealthWatch();
 }
 
 const gotLock = app.requestSingleInstanceLock();
@@ -163,8 +242,18 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
+  process.on("uncaughtException", (error) => {
+    console.error("Electron uncaught exception:", error);
+    dialog.showErrorBox(APP_NAME, error.message || "EMAT hit an unexpected error and needs to close.");
+    app.quit();
+  });
+
   app.on("second-instance", () => {
     focusWindow();
+  });
+
+  app.on("child-process-gone", (_event, details) => {
+    console.error("Child process gone:", details);
   });
 
   app.whenReady().then(() => {
@@ -189,8 +278,13 @@ if (!gotLock) {
   });
 
   app.on("window-all-closed", () => {
+    stopHealthWatch();
     if (process.platform !== "darwin") {
       app.quit();
     }
+  });
+
+  app.on("before-quit", () => {
+    stopHealthWatch();
   });
 }

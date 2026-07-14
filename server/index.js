@@ -37,6 +37,12 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled rejection:", reason);
 });
 
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+  // Exit so desktop/docker supervisors can restart a clean process.
+  process.exit(1);
+});
+
 start().catch((err) => {
   console.error("Failed to start server:", err.message);
   process.exit(1);

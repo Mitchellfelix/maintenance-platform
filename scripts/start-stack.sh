@@ -69,7 +69,7 @@ is_local_app_url() {
 }
 
 server_healthy() {
-  curl -fsS "${APP_URL}/api/health" >/dev/null 2>&1
+  curl -fsS "${APP_URL}/api/health/db" >/dev/null 2>&1
 }
 
 server_running() {
