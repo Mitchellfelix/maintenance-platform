@@ -9,9 +9,20 @@ const { applyStatusTimestamps } = require("../services/workOrderStatus");
 const { canEditWorkOrder, filterWorkOrderUpdate } = require("../services/workOrderAccess");
 const { recordAudit } = require("../services/auditService");
 const { getAccessibleSiteIds, buildSiteIdFilter, assertSiteAccess } = require("../services/siteAccessService");
+const { hasPermission } = require("../lib/permissions");
 
 const router = express.Router();
 
+async function assertActiveAssignee(assigneeId) {
+  if (!assigneeId) return;
+  const assignee = await prisma.user.findFirst({
+    where: { id: assigneeId, status: "ACTIVE" },
+    select: { id: true },
+  });
+  if (!assignee) {
+    throw Object.assign(new Error("Assignee not found or inactive"), { status: 400 });
+  }
+}
 router.get("/", optionalAuth, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
@@ -44,23 +55,30 @@ router.post("/", ...workOrdersCreate, validate(createWorkOrderSchema), async (re
   try {
     await assertSiteAccess(req.user, req.validated.siteId);
 
-    const workOrder = await createWorkOrderWithCode({
-      ...req.validated,
-      requesterId: req.user.id,
-    });
+    const payload = { ...req.validated, requesterId: req.user.id };
+    if (!hasPermission(req.user.role, "workorders:assign")) {
+      delete payload.assigneeId;
+    } else {
+      await assertActiveAssignee(payload.assigneeId);
+    }
+
+    const workOrder = await createWorkOrderWithCode(payload);
 
     await recordAudit({
       action: "workorder.created",
       entityType: "workorder",
       entityId: workOrder.id,
       actorId: req.user.id,
-      metadata: { code: workOrder.code, siteId: workOrder.siteId },
+      metadata: { code: workOrder.code, siteId: workOrder.siteId, assigneeId: workOrder.assigneeId || null },
     });
 
     res.status(201).json(workOrder);
   } catch (error) {
     if (error.status === 403) {
       return res.status(403).json({ error: "Forbidden", message: error.message });
+    }
+    if (error.status === 400) {
+      return res.status(400).json({ error: error.message });
     }
     next(error);
   }
@@ -85,6 +103,9 @@ router.patch("/:id", ...workOrdersUpdate, validate(updateWorkOrderSchema), async
     if (filtered.siteId) {
       await assertSiteAccess(req.user, filtered.siteId);
     }
+    if (Object.prototype.hasOwnProperty.call(filtered, "assigneeId") && filtered.assigneeId) {
+      await assertActiveAssignee(filtered.assigneeId);
+    }
 
     const data = applyStatusTimestamps(existing, filtered);
     const workOrder = await prisma.workOrder.update({
@@ -104,6 +125,9 @@ router.patch("/:id", ...workOrdersUpdate, validate(updateWorkOrderSchema), async
   } catch (error) {
     if (error.status === 403) {
       return res.status(403).json({ error: "Forbidden", message: error.message });
+    }
+    if (error.status === 400) {
+      return res.status(400).json({ error: error.message });
     }
     next(error);
   }

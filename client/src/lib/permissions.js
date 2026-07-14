@@ -14,10 +14,10 @@ const ROLE_LABELS = {
 const ROLE_DESCRIPTIONS = {
   ADMIN: "Full access — manage users, approve access requests, and configure the platform.",
   OPS_LEAD:
-    "Ops Lead — manage sites, assets, and work orders for assigned locations; assign work, approve access requests, and oversee operations.",
+    "Ops Lead — manage sites, assets, and work orders for assigned locations; assign work to any user, approve access requests, and oversee operations.",
   OPERATOR:
-    "Operator — perform field work: update assigned work orders, maintain sites and assets within assigned locations.",
-  REQUESTER: "View records and create new work orders.",
+    "Operator — perform field work: update assigned work orders, assign tasks, and maintain sites and assets within assigned locations.",
+  REQUESTER: "View records, create work orders, and assign them to any active user.",
 };
 
 /** Roles available when requesting a new account. */
@@ -43,7 +43,7 @@ const PERMISSIONS = {
   "workorders:create": ROLES,
   "workorders:update": ["ADMIN", "OPS_LEAD", "OPERATOR", "REQUESTER"],
   "workorders:delete": ["ADMIN", "OPS_LEAD"],
-  "workorders:assign": ["ADMIN", "OPS_LEAD"],
+  "workorders:assign": ROLES,
   "users:read": ["ADMIN"],
   "users:update": ["ADMIN"],
   "audit:read": ["ADMIN"],
@@ -113,7 +113,7 @@ export function getWorkOrderFieldAccess(role) {
       priority: true,
       siteId: false,
       assetId: false,
-      assigneeId: false,
+      assigneeId: true,
     };
   }
   if (role === "REQUESTER") {
@@ -124,7 +124,7 @@ export function getWorkOrderFieldAccess(role) {
       priority: false,
       siteId: false,
       assetId: false,
-      assigneeId: false,
+      assigneeId: true,
     };
   }
   return {};

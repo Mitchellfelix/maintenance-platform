@@ -17,6 +17,9 @@ function filterWorkOrderUpdate(user, updates) {
 
   if (!hasPermission(user.role, "workorders:assign")) {
     delete data.assigneeId;
+  }
+
+  if (user.role !== "ADMIN" && user.role !== "OPS_LEAD") {
     delete data.siteId;
     delete data.assetId;
   }
@@ -25,6 +28,9 @@ function filterWorkOrderUpdate(user, updates) {
     const allowed = {};
     if (data.title !== undefined) allowed.title = data.title;
     if (data.description !== undefined) allowed.description = data.description;
+    if (data.assigneeId !== undefined && hasPermission(user.role, "workorders:assign")) {
+      allowed.assigneeId = data.assigneeId;
+    }
     return allowed;
   }
 

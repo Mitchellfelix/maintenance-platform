@@ -40,7 +40,7 @@ const PERMISSIONS = {
   "workorders:create": ROLES,
   "workorders:update": ["ADMIN", "OPS_LEAD", "OPERATOR", "REQUESTER"],
   "workorders:delete": ["ADMIN", "OPS_LEAD"],
-  "workorders:assign": ["ADMIN", "OPS_LEAD"],
+  "workorders:assign": ROLES,
 
   // Users (admin only)
   "users:read": ["ADMIN"],

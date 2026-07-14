@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, getErrorMessage } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getRoleLabel } from "../lib/permissions.js";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import FormField from "../components/FormField.jsx";
 import LoadingState from "../components/LoadingState.jsx";
@@ -19,6 +20,7 @@ const emptyForm = {
   description: "",
   siteId: "",
   assetId: "",
+  assigneeId: "",
   priority: "MEDIUM",
 };
 
@@ -27,23 +29,28 @@ export default function WorkOrdersPage() {
   const [workOrders, setWorkOrders] = useState([]);
   const [sites, setSites] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [assignees, setAssignees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+  const canAssign = can("workorders:assign");
 
   async function loadData() {
     setLoading(true);
     setError("");
     try {
-      const [ordersResponse, sitesResponse, assetsResponse] = await Promise.all([
-        api.get("/api/workorders"),
-        api.get("/api/sites"),
-        api.get("/api/assets"),
-      ]);
+      const requests = [api.get("/api/workorders"), api.get("/api/sites"), api.get("/api/assets")];
+      if (canAssign) {
+        requests.push(api.get("/api/users/assignees"));
+      }
+      const [ordersResponse, sitesResponse, assetsResponse, assigneesResponse] = await Promise.all(requests);
       setWorkOrders(ordersResponse.data);
       setSites(sitesResponse.data);
       setAssets(assetsResponse.data);
+      if (assigneesResponse) {
+        setAssignees(assigneesResponse.data);
+      }
       if (!form.siteId && sitesResponse.data[0]) {
         setForm((current) => ({ ...current, siteId: sitesResponse.data[0].id }));
       }
@@ -56,7 +63,7 @@ export default function WorkOrdersPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [canAssign]);
 
   const siteAssets = assets.filter((asset) => asset.siteId === form.siteId);
 
@@ -83,6 +90,9 @@ export default function WorkOrdersPage() {
         priority: form.priority,
         assetId: form.assetId || undefined,
       };
+      if (canAssign && form.assigneeId) {
+        payload.assigneeId = form.assigneeId;
+      }
       await api.post("/api/workorders", payload);
       setForm((current) => ({ ...emptyForm, siteId: current.siteId }));
       await loadData();
@@ -97,7 +107,7 @@ export default function WorkOrdersPage() {
     <div>
       <PageHeader
         title="Work Orders"
-        description="Create and track maintenance tasks across sites and assets."
+        description="Create tasks and assign them to any active user."
         action={
           !isAuthenticated ? (
             <Link to="/login" className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
@@ -142,6 +152,22 @@ export default function WorkOrdersPage() {
               ...siteAssets.map((asset) => ({ value: asset.id, label: asset.name })),
             ]}
           />
+          {canAssign ? (
+            <FormField
+              label="Assign to"
+              name="assigneeId"
+              as="select"
+              value={form.assigneeId}
+              onChange={updateField}
+              options={[
+                { value: "", label: "Unassigned" },
+                ...assignees.map((user) => ({
+                  value: user.id,
+                  label: `${user.name || user.email} (${getRoleLabel(user.role)})`,
+                })),
+              ]}
+            />
+          ) : null}
           <div className="md:col-span-2">
             <FormField
               label="Description"
@@ -155,7 +181,7 @@ export default function WorkOrdersPage() {
             <button
               type="submit"
               disabled={submitting || sites.length === 0}
-              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {submitting ? "Creating..." : "Create work order"}
             </button>
@@ -172,7 +198,15 @@ export default function WorkOrdersPage() {
               key={order.id}
               to={`/workorders/${order.id}`}
               title={`${order.code} · ${order.title}`}
-              subtitle={[order.site?.name, order.asset?.name].filter(Boolean).join(" · ")}
+              subtitle={[
+                order.site?.name,
+                order.asset?.name,
+                order.assignee
+                  ? `Assigned: ${order.assignee.name || order.assignee.email}`
+                  : "Unassigned",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
               badge={order.status}
             />
           ))}

@@ -24,9 +24,9 @@ const router = express.Router();
 router.get("/assignees", ...workOrdersAssign, async (req, res, next) => {
   try {
     const users = await prisma.user.findMany({
-      where: { role: { in: ["OPERATOR", "OPS_LEAD", "ADMIN"] } },
-      orderBy: { name: "asc" },
-      select: { id: true, email: true, name: true, role: true },
+      where: { status: "ACTIVE" },
+      orderBy: [{ name: "asc" }, { email: "asc" }],
+      select: { id: true, email: true, name: true, role: true, status: true },
     });
     res.json(users);
   } catch (error) {
