@@ -12,3 +12,14 @@ export function caseSelectOptions(cases = []) {
     label: `${item.title}${item.status === "COMPLETED" ? " ✓" : ""}`,
   }));
 }
+
+/** True when Case A–W are all present (by title). */
+export function hasAllStandardCases(cases = []) {
+  const titles = new Set(cases.map((item) => String(item.title || "").trim().toUpperCase()));
+  return GREEN_TAG_CASE_OPTIONS.every((option) => titles.has(option.value.toUpperCase()));
+}
+
+/** Guard against HTML / error payloads from a stale API process. */
+export function isAssignmentPayload(value) {
+  return Boolean(value && typeof value === "object" && Array.isArray(value.cases));
+}

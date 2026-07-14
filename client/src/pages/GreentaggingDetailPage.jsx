@@ -9,7 +9,12 @@ import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { getRoleLabel } from "../lib/permissions.js";
 import { formatDate, statusLabel } from "../utils/labels.js";
-import { caseSelectOptions, GREEN_TAG_CASE_OPTIONS } from "../lib/greenTagCases.js";
+import {
+  caseSelectOptions,
+  GREEN_TAG_CASE_OPTIONS,
+  hasAllStandardCases,
+  isAssignmentPayload,
+} from "../lib/greenTagCases.js";
 
 function greenTagStatusLabel(status) {
   if (status === "OPEN") return "awaiting";
@@ -102,13 +107,15 @@ export default function GreentaggingDetailPage() {
       }
 
       // Ensure standard Case A–W exist so the case dropdown is complete.
-      if (can("greentagging:write")) {
+      if (can("greentagging:write") && !hasAllStandardCases(data.cases)) {
         try {
           const ensured = await api.post(`/api/greentagging/${id}/cases/ensure-standard`);
-          data = ensured.data;
-          setAssignment(data);
+          if (isAssignmentPayload(ensured.data)) {
+            data = ensured.data;
+            setAssignment(data);
+          }
         } catch {
-          // Keep existing cases.
+          // Stale API without this route — keep existing cases.
         }
       }
 

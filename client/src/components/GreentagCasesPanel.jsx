@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api, getErrorMessage } from "../api/client.js";
 import FormField from "./FormField.jsx";
 import StatusBadge from "./StatusBadge.jsx";
-import { caseSelectOptions } from "../lib/greenTagCases.js";
+import { caseSelectOptions, hasAllStandardCases, isAssignmentPayload } from "../lib/greenTagCases.js";
 
 /**
  * Process Case A–W picker for the greentagging board (selected job).
@@ -22,17 +22,18 @@ export default function GreentagCasesPanel({ assignment, writable, onAssignmentC
 
   useEffect(() => {
     if (!assignmentId || !writable) return;
+    if (hasAllStandardCases(cases)) return;
     let cancelled = false;
     (async () => {
       try {
         const response = await api.post(`/api/greentagging/${assignmentId}/cases/ensure-standard`);
-        if (cancelled) return;
+        if (cancelled || !isAssignmentPayload(response.data)) return;
         onAssignmentChange?.(response.data);
         if (!activeCaseId && response.data.cases?.[0]) {
           setActiveCaseId(response.data.cases[0].id);
         }
       } catch {
-        // Keep existing cases; detail page can still add Case A–W.
+        // Stale API or offline — keep whatever cases already loaded.
       }
     })();
     return () => {

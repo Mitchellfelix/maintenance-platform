@@ -100,6 +100,12 @@ start_database() {
   fi
 
   if ! docker info >/dev/null 2>&1; then
+    # Docker Desktop stopped, but Postgres may still be reachable from an earlier start.
+    if curl -fsS "http://127.0.0.1:${PORT}/api/health/db" >/dev/null 2>&1 \
+      || nc -z 127.0.0.1 5432 >/dev/null 2>&1; then
+      echo "Docker Desktop is not running, but PostgreSQL is already reachable."
+      return 0
+    fi
     alert "Docker is installed but not running. Start Docker Desktop, then open EMAT again."
     exit 1
   fi
@@ -161,14 +167,33 @@ needs_server_restart() {
   return 1
 }
 
-stop_local_server() {
-  if [[ ! -f "$PID_FILE" ]]; then
+free_port() {
+  local pids=""
+  if command -v lsof >/dev/null 2>&1; then
+    pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
+  fi
+  if [[ -z "$pids" ]]; then
     return 0
   fi
-  local pid
-  pid="$(cat "$PID_FILE")"
-  kill "$pid" 2>/dev/null || true
-  rm -f "$PID_FILE"
+  # Kill whatever still owns the API port (npm wrapper PIDs often diverge from node).
+  echo "$pids" | xargs kill 2>/dev/null || true
+  sleep 0.4
+  pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
+  if [[ -n "$pids" ]]; then
+    echo "$pids" | xargs kill -9 2>/dev/null || true
+  fi
+}
+
+stop_local_server() {
+  if [[ -f "$PID_FILE" ]]; then
+    local pid
+    pid="$(cat "$PID_FILE")"
+    kill "$pid" 2>/dev/null || true
+    # Also stop children if PID was an npm wrapper.
+    pkill -P "$pid" 2>/dev/null || true
+    rm -f "$PID_FILE"
+  fi
+  free_port
 }
 
 ensure_ui_build() {
@@ -201,8 +226,16 @@ start_local_server() {
     return 0
   fi
 
-  if server_running; then
-    stop_local_server
+  # Always release the port before start — a stale node can outlive the pid file.
+  stop_local_server
+
+  if command -v lsof >/dev/null 2>&1; then
+    local still_held
+    still_held="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
+    if [[ -n "$still_held" ]]; then
+      alert "Port $PORT is still in use (pid $still_held). Quit EMAT / stop the old server, then try again."
+      exit 1
+    fi
   fi
 
   notify "Safety backup before database updates..."
@@ -221,6 +254,7 @@ start_local_server() {
   echo $! >"$PID_FILE"
 
   if ! wait_for_server; then
+    free_port
     alert "Server failed to start. See $LOG_FILE for details."
     exit 1
   fi
