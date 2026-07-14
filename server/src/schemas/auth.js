@@ -31,4 +31,18 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-module.exports = { registerSchema, loginSchema, REGISTRATION_ROLES };
+const requestPasswordResetSchema = z.object({
+  email: z.string().email(),
+});
+
+const completePasswordResetSchema = z.object({
+  password: z.string().min(8).max(128),
+});
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  requestPasswordResetSchema,
+  completePasswordResetSchema,
+  REGISTRATION_ROLES,
+};

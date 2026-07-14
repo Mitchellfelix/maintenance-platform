@@ -73,6 +73,39 @@ Team members can skip the desktop install and open the **Team URL** in Chrome/Sa
    node scripts/promote-admin.js user@company.com
    ```
 
+### Optional: email + Slack on every access request
+
+On the **host** `server/.env`, configure one email path and/or Slack:
+
+```bash
+# Review link in messages
+APP_URL=http://YOUR-TEAM-URL:3000
+
+# Option A — Resend
+RESEND_API_KEY=re_xxxxxxxx
+MAIL_FROM="EMAT <notifications@yourcompany.com>"
+
+# Option B — SMTP
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_USER=emat@yourcompany.com
+# SMTP_PASS=app-password
+# MAIL_FROM="EMAT <emat@yourcompany.com>"
+
+# Slack Incoming Webhook
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+```
+
+Restart the host after editing env. Notifications (email still succeeds for the underlying action if mail fails):
+
+- New signup/elevation requests → email all **ACTIVE Admin + Ops Lead** users and/or Slack
+- Access request **approved** → email the requester that they can sign in
+- Admin **creates a user** (with credentials email on) → welcome email with temporary password
+- Invite accepted → confirmation email that the account is ready
+- **Forgot password** → one-time reset link (30 minutes; Sign in → Forgot password?)
+
+Admins and Ops Leads can approve under **Access requests** (Ops Leads cannot assign the Admin role). Without email configured, use `node scripts/reset-password.js user@company.com "new-password"` on the host.
+
 ---
 
 ## Copy-paste handoff (send this to your team)

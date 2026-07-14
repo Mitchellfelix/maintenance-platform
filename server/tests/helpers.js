@@ -10,6 +10,8 @@ function getApp() {
 }
 
 async function resetDatabase() {
+  await prisma.passwordReset.deleteMany();
+  await prisma.userInvite.deleteMany();
   await prisma.accessRequest.deleteMany();
   await prisma.auditLog.deleteMany();
   await prisma.siteAccess.deleteMany();

@@ -1,3 +1,6 @@
+require("dotenv").config({ path: ".env.test" });
+require("dotenv").config();
+
 const fs = require("fs");
 const path = require("path");
 

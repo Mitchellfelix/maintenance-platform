@@ -1,6 +1,7 @@
 const express = require("express");
 const validate = require("../middleware/validate");
 const { anyAuth, accessRequestsRead, accessRequestsReview } = require("../middleware/routeGuards");
+const { hasPermission } = require("../lib/permissions");
 const {
   createAccessRequestSchema,
   reviewAccessRequestSchema,
@@ -55,8 +56,8 @@ router.get("/:id", ...anyAuth, async (req, res, next) => {
     if (!request) return res.status(404).json({ error: "Access request not found" });
 
     const isOwner = request.requesterId === req.user.id;
-    const isAdmin = req.user.role === "ADMIN";
-    if (!isOwner && !isAdmin) {
+    const canReview = hasPermission(req.user.role, "access-requests:read");
+    if (!isOwner && !canReview) {
       return res.status(403).json({ error: "Forbidden" });
     }
 

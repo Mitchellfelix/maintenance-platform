@@ -1,6 +1,7 @@
 const prisma = require("../lib/prisma");
 const { canManageRole, isSiteScopedRole } = require("../lib/permissions");
 const { recordAudit } = require("./auditService");
+const { notifyAccessRequestCreated, notifyAccountReady } = require("./notifyService");
 
 const requestInclude = {
   requester: { select: { id: true, email: true, name: true, role: true, status: true } },
@@ -67,7 +68,9 @@ async function createAccessRequest(requester, data) {
     },
   });
 
-  return serializeAccessRequest(request);
+  const serialized = serializeAccessRequest(request);
+  void notifyAccessRequestCreated(serialized);
+  return serialized;
 }
 
 async function listMyAccessRequests(requesterId) {
@@ -241,6 +244,13 @@ async function approveAccessRequest(reviewer, requestId, { reviewNote, requested
       reviewNote: reviewNote || null,
       activatedAccount: existing.requester.status !== "ACTIVE",
     },
+  });
+
+  void notifyAccountReady({
+    email: existing.requester.email,
+    name: existing.requester.name,
+    role: finalRole,
+    via: "access_approved",
   });
 
   return getAccessRequestById(requestId);

@@ -4,6 +4,7 @@ const prisma = require("../lib/prisma");
 const { recordAudit } = require("./auditService");
 const { isSiteScopedRole } = require("../lib/permissions");
 const { validateSiteIds } = require("./accessRequestService");
+const { notifyAccessRequestCreated } = require("./notifyService");
 
 const SALT_ROUNDS = 10;
 
@@ -72,6 +73,23 @@ async function register({
       actorId: user.id,
       metadata: { email: user.email, requestedRole, status: "PENDING" },
     });
+
+    const pendingRequest = await prisma.accessRequest.findFirst({
+      where: { requesterId: user.id, status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        requester: { select: { id: true, email: true, name: true, role: true, status: true } },
+        reviewer: { select: { id: true, email: true, name: true, role: true } },
+      },
+    });
+    if (pendingRequest) {
+      void notifyAccessRequestCreated({
+        ...pendingRequest,
+        requestedSiteIds: Array.isArray(pendingRequest.requestedSiteIds)
+          ? pendingRequest.requestedSiteIds
+          : [],
+      });
+    }
   }
 
   if (status === "PENDING") {

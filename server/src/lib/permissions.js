@@ -51,8 +51,8 @@ const PERMISSIONS = {
 
   // Access requests
   "access-requests:create": ROLES,
-  "access-requests:read": ["ADMIN"],
-  "access-requests:review": ["ADMIN"],
+  "access-requests:read": ["ADMIN", "OPS_LEAD"],
+  "access-requests:review": ["ADMIN", "OPS_LEAD"],
 
   // Department SOPs
   "sops:read": ROLES,
@@ -77,8 +77,11 @@ function isSiteScopedRole(role) {
 }
 
 function canManageRole(actorRole, targetRole) {
-  if (actorRole !== "ADMIN") return false;
-  return ROLES.includes(targetRole);
+  if (!ROLES.includes(targetRole)) return false;
+  if (actorRole === "ADMIN") return true;
+  // Ops Leads can approve access requests for non-admin roles only.
+  if (actorRole === "OPS_LEAD") return targetRole !== "ADMIN";
+  return false;
 }
 
 module.exports = {

@@ -202,6 +202,13 @@ export default function LoginPage() {
             onChange={updateField}
             required
           />
+          {mode === "login" ? (
+            <div className="-mt-2 text-right">
+              <Link to="/forgot-password" className="text-sm font-medium text-emerald-700 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+          ) : null}
 
           <ErrorBanner message={error} />
           {success ? (

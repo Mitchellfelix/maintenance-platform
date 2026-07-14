@@ -65,7 +65,11 @@ Open **http://localhost:5173** in your browser.
 - Backend API: http://localhost:3000
 - Health check: http://localhost:3000/api/health/db
 
-Register at `/login`, then create sites, assets, and work orders.
+Register at `/login`, then create sites, assets, and work orders. Admins can also **add users** or **send invites** from **User access**.
+
+### Access request alerts (optional)
+
+Configure Resend **or** SMTP plus optional Slack in `server/.env` (see `server/.env.example`). With mail configured, EMAT emails ACTIVE Admin/Ops Lead users on new access requests (and optional Slack), emails requesters when approved, emails users when an admin creates their account or they accept an invite, and sends password-reset links from **Forgot password?** on the sign-in page.
 
 ## Frontend
 

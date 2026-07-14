@@ -176,7 +176,7 @@ describeIfDb("access requests", () => {
     expect(approveResponse.status).toBe(400);
   });
 
-  it("blocks non-admin from reviewing requests", async () => {
+  it("blocks operators from reviewing requests", async () => {
     const { response: adminResponse } = await registerUser(app, { role: "ADMIN" });
     const adminToken = adminResponse.body.token;
     const site = await createSite(app, adminToken, { name: "West Plant" });
@@ -197,5 +197,41 @@ describeIfDb("access requests", () => {
       .set(authHeader(requesterToken));
 
     expect(reviewResponse.status).toBe(403);
+  });
+
+  it("lets ops leads approve access requests", async () => {
+    const { response: adminResponse } = await registerUser(app, { role: "ADMIN" });
+    const adminToken = adminResponse.body.token;
+    const site = await createSite(app, adminToken, { name: "Harbor Plant" });
+
+    const { response: opsLeadResponse } = await registerUser(app, { role: "OPS_LEAD" });
+    const opsLeadToken = opsLeadResponse.body.token;
+
+    const { response: requesterResponse } = await registerUser(app, { role: "REQUESTER" });
+    const requesterToken = requesterResponse.body.token;
+    const requesterId = requesterResponse.body.user.id;
+
+    const createResponse = await request(app)
+      .post("/api/access-requests")
+      .set(authHeader(requesterToken))
+      .send({
+        requestedRole: "OPERATOR",
+        requestedSiteIds: [site.response.body.id],
+        reason: "Ops lead approval path",
+      });
+
+    expect(createResponse.status).toBe(201);
+
+    const approveResponse = await request(app)
+      .patch(`/api/access-requests/${createResponse.body.id}/approve`)
+      .set(authHeader(opsLeadToken))
+      .send({ reviewNote: "Approved by Ops Lead" });
+
+    expect(approveResponse.status).toBe(200);
+    expect(approveResponse.body.status).toBe("APPROVED");
+
+    const updatedUser = await prisma.user.findUnique({ where: { id: requesterId } });
+    expect(updatedUser.role).toBe("OPERATOR");
+    expect(updatedUser.status).toBe("ACTIVE");
   });
 });

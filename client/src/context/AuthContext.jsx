@@ -55,6 +55,20 @@ export function AuthProvider({ children }) {
     return response.data;
   }, []);
 
+  const acceptInvite = useCallback(async (token, payload) => {
+    const response = await api.post(`/api/auth/invites/${token}/accept`, payload);
+    setStoredToken(response.data.token);
+    setUser(response.data.user);
+    return response.data.user;
+  }, []);
+
+  const completePasswordReset = useCallback(async (token, password) => {
+    const response = await api.post(`/api/auth/password-reset/${token}`, { password });
+    setStoredToken(response.data.token);
+    setUser(response.data.user);
+    return response.data.user;
+  }, []);
+
   const can = useCallback(
     (permission) => hasPermission(user?.role, permission),
     [user?.role],
@@ -69,13 +83,26 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       login,
       register,
+      acceptInvite,
+      completePasswordReset,
       logout,
       refreshUser,
       getErrorMessage,
       can,
       roleLabel,
     }),
-    [user, loading, login, register, logout, refreshUser, can, roleLabel],
+    [
+      user,
+      loading,
+      login,
+      register,
+      acceptInvite,
+      completePasswordReset,
+      logout,
+      refreshUser,
+      can,
+      roleLabel,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

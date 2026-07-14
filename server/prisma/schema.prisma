@@ -72,6 +72,8 @@ model User {
   accessRequests      AccessRequest[] @relation("AccessRequestRequester")
   accessReviews       AccessRequest[] @relation("AccessRequestReviewer")
   sopVersionsPublished SopVersion[]   @relation("SopVersionPublisher")
+  invitesSent         UserInvite[]    @relation("InviteSender")
+  passwordResets      PasswordReset[]
 }
 
 // ——— Locations & equipment ———
@@ -208,6 +210,40 @@ model AccessRequest {
   @@index([requesterId])
   @@index([status])
   @@index([createdAt])
+}
+
+model UserInvite {
+  id          String    @id @default(cuid())
+  email       String
+  name        String?
+  role        UserRole
+  siteIds     Json?
+  token       String    @unique
+  invitedById String
+  invitedBy   User      @relation("InviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email])
+  @@index([expiresAt])
+  @@index([invitedById])
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // ——— Inventory ———

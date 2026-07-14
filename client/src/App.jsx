@@ -19,6 +19,9 @@ import InventoryPage from "./pages/InventoryPage.jsx";
 import InventoryPartDetailPage from "./pages/InventoryPartDetailPage.jsx";
 import SopsPage from "./pages/SopsPage.jsx";
 import SopDetailPage from "./pages/SopDetailPage.jsx";
+import InviteAcceptPage from "./pages/InviteAcceptPage.jsx";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
+import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 
 export default function App() {
   return (
@@ -71,6 +74,9 @@ export default function App() {
             />
           </Route>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/invite/:token" element={<InviteAcceptPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
