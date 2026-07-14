@@ -21,6 +21,8 @@
     "app:stop": "bash scripts/stop-app.sh",
     "team:serve": "bash scripts/team-serve.sh",
     "team:connect": "bash scripts/team-connect.sh",
+    "team:autostart": "bash scripts/install-team-autostart.sh",
+    "team:autostart:off": "bash scripts/uninstall-team-autostart.sh",
     "package:team-client": "bash scripts/package-team-client.sh"
   },
   "workspaces": [

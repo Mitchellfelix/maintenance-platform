@@ -124,6 +124,26 @@ Restart the host after editing env.
 
 ---
 
+## Host: keep the team server always on
+
+`npm start` stops when that Terminal/process exits. For a durable host:
+
+1. **Use Docker team mode** (auto-restarts containers):
+   ```bash
+   npm run team:serve
+   ```
+2. **Start at login** (macOS LaunchAgent checks every 2 minutes):
+   ```bash
+   npm run team:autostart
+   ```
+3. **Docker Desktop** → Settings → General → enable *Start Docker Desktop when you sign in*.
+4. **Energy settings** → prevent sleep while plugged in (sleep can still block teammates on Wi‑Fi).
+
+Remove autostart: `npm run team:autostart:off`  
+Logs: `~/Library/Logs/EMAT/`
+
+---
+
 ## Copy-paste handoff (send this to your team)
 
 ```text
