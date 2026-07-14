@@ -4,21 +4,20 @@ Your Mac is **not** required for teammates. Railway runs the app + Postgres 24/7
 
 ## One-time setup
 
-### 1. Railway project
+### 1. Railway project (dashboard — recommended)
 
-1. Create an account at [railway.app](https://railway.app) and install the CLI:
-   ```bash
-   npm install -g @railway/cli
-   railway login
-   ```
-2. From this repo:
-   ```bash
-   cd ~/maintenance-platform
-   railway init          # or: railway link
-   ```
-3. In the Railway dashboard for the project:
-   - **Add Postgres** (plugin) — shares `DATABASE_URL` with the web service
-   - **Add a web service** from this GitHub repo (or `railway up`) using the root `Dockerfile` / [`railway.toml`](../railway.toml)
+1. Sign in at [railway.app](https://railway.app)
+2. **New Project** → **Deploy from GitHub repo** → `Mitchellfelix/maintenance-platform` (branch `main`)
+3. After the first service appears, **Add Postgres** and ensure `DATABASE_URL` is available to the web service
+4. Continue with volume + variables below, then redeploy
+
+CLI alternative (after `npm install -g @railway/cli`):
+
+```bash
+railway login
+railway init
+railway up
+```
 
 ### 2. Volume (uploads + Mac zip)
 
