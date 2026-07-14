@@ -15,3 +15,4 @@ server/coverage/
 .maintenance-platform.pid
 .emat-app.pid
 .emat-app.log
+.run/
