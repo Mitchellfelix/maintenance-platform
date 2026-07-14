@@ -6,6 +6,21 @@ Standalone maintenance platform app with:
 - `server/` Express + Prisma backend
 - PostgreSQL database via Prisma migrations
 
+## Team setup (shared URL)
+
+For one database and one URL for the whole team, see **[docs/TEAM-SETUP.md](docs/TEAM-SETUP.md)**.
+
+Quick version:
+
+```bash
+# Host
+npm run team:serve          # prints Team URL, e.g. http://192.168.1.50:3000
+
+# Each team member
+npm run team:connect -- http://192.168.1.50:3000
+emat
+```
+
 ## Local setup
 
 ### 1. Install dependencies
