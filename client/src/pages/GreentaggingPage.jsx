@@ -104,10 +104,10 @@ function AssignmentCard({ item, writable, busyId, onMove }) {
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
-          to={`/greentagging/${item.id}`}
-          className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800"
+          to={`/greentagging/${item.id}#overall-checklist`}
+          className="rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white"
         >
-          Open
+          Open checklist
         </Link>
         {writable && item.status !== "IN_PROGRESS" && item.status !== "COMPLETED" ? (
           <button

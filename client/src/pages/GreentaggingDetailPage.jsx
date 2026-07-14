@@ -124,6 +124,13 @@ export default function GreentaggingDetailPage() {
     load();
   }, [id]);
 
+  useEffect(() => {
+    if (loading || !assignment) return;
+    if (window.location.hash === "#overall-checklist") {
+      document.getElementById("overall-checklist")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [loading, assignment?.id]);
+
   function selectCase(caseId) {
     if (!assignment) return;
     const selected = assignment.cases.find((item) => item.id === caseId);
@@ -262,6 +269,8 @@ export default function GreentaggingDetailPage() {
   const writable = can("greentagging:write");
   const stepIndex = pipelineStepIndex(assignment.status);
   const casesDone = assignment.cases.filter((item) => item.status === "COMPLETED").length;
+  const checklistItems = assignment.checklistItems || [];
+  const checklistDone = checklistItems.filter((item) => item.completedAt).length;
 
   return (
     <div>
@@ -273,6 +282,12 @@ export default function GreentaggingDetailPage() {
         action={
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge value={assignment.status} label={greenTagStatusLabel(assignment.status)} />
+            <a
+              href="#overall-checklist"
+              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Overall checklist
+            </a>
             <Link
               to="/greentagging"
               className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium"
@@ -310,10 +325,16 @@ export default function GreentaggingDetailPage() {
               );
             })}
           </div>
-          <p className="text-sm text-slate-400">
-            {casesDone}/{assignment.cases.length} process cases complete
-            {assignment.status === "ON_HOLD" ? " · Currently on hold" : ""}
-          </p>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <a href="#overall-checklist" className="font-semibold text-orange-300 hover:underline">
+              Checklist {checklistDone}/{checklistItems.length || 0}
+            </a>
+            <span className="text-slate-500">·</span>
+            <span className="text-slate-400">
+              {casesDone}/{assignment.cases.length} process cases
+              {assignment.status === "ON_HOLD" ? " · On hold" : ""}
+            </span>
+          </div>
         </div>
 
         {writable ? (
@@ -358,141 +379,43 @@ export default function GreentaggingDetailPage() {
                 Reopen to awaiting
               </button>
             ) : null}
+            <a
+              href="#overall-checklist"
+              className="rounded-xl border border-orange-400/50 px-4 py-2 text-sm font-semibold text-orange-300"
+            >
+              Jump to checklist
+            </a>
           </div>
-        ) : null}
+        ) : (
+          <div className="mt-4">
+            <a
+              href="#overall-checklist"
+              className="rounded-xl border border-orange-400/50 px-4 py-2 text-sm font-semibold text-orange-300"
+            >
+              Jump to checklist
+            </a>
+          </div>
+        )}
       </section>
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold">Asset</h3>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-400">Name</dt>
-              <dd className="font-medium">
-                {assignment.asset ? (
-                  <Link className="text-orange-300 hover:underline" to={`/assets/${assignment.asset.id}`}>
-                    {assignment.asset.name}
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-400">Site</dt>
-              <dd className="font-medium">{assignment.asset?.site?.name || "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-400">Serial</dt>
-              <dd className="font-medium">{assignment.asset?.serialNumber || "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-400">Assignee</dt>
-              <dd className="font-medium">
-                {assignment.assignee?.name || assignment.assignee?.email || "Unassigned"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-slate-400">Completed</dt>
-              <dd className="font-medium">{formatDate(assignment.completedAt)}</dd>
-            </div>
-          </dl>
-          {assignment.summary ? <p className="mt-4 text-sm text-slate-300">{assignment.summary}</p> : null}
-        </section>
-
-        {writable ? (
-          <form
-            className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm"
-            onSubmit={handleSaveAssignment}
-          >
-            <h3 className="text-lg font-semibold">Assignment details</h3>
-            <FormField
-              label="Title"
-              name="title"
-              value={assignmentForm.title}
-              onChange={(e) => setAssignmentForm((c) => ({ ...c, title: e.target.value }))}
-              required
-            />
-            <FormField
-              label="Asset"
-              name="assetId"
-              as="select"
-              value={assignmentForm.assetId}
-              onChange={(e) => setAssignmentForm((c) => ({ ...c, assetId: e.target.value }))}
-              options={assets.map((asset) => ({
-                value: asset.id,
-                label: `${asset.name}${asset.site?.name ? ` · ${asset.site.name}` : ""}`,
-              }))}
-            />
-            <FormField
-              label="Status"
-              name="status"
-              as="select"
-              value={assignmentForm.status}
-              onChange={(e) => setAssignmentForm((c) => ({ ...c, status: e.target.value }))}
-              options={statusOptions}
-            />
-            <FormField
-              label="Assignee"
-              name="assigneeId"
-              as="select"
-              value={assignmentForm.assigneeId}
-              onChange={(e) => setAssignmentForm((c) => ({ ...c, assigneeId: e.target.value }))}
-              options={[
-                { value: "", label: "Unassigned" },
-                ...assignees.map((person) => ({
-                  value: person.id,
-                  label: `${person.name || person.email} (${getRoleLabel(person.role)})`,
-                })),
-              ]}
-            />
-            <FormField
-              label="Notes from field"
-              name="summary"
-              as="textarea"
-              value={assignmentForm.summary}
-              onChange={(e) => setAssignmentForm((c) => ({ ...c, summary: e.target.value }))}
-            />
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                Save assignment
-              </button>
-              {can("greentagging:delete") ? (
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleDeleteAssignment}
-                  className="rounded-xl border border-rose-300/40 px-4 py-2 text-sm font-semibold text-rose-300"
-                >
-                  Delete assignment
-                </button>
-              ) : null}
-            </div>
-          </form>
-        ) : (
-          <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
-            <p className="text-sm text-slate-400">You can view process cases and directions for this assignment.</p>
-          </section>
-        )}
-      </div>
-
-      <section className="mb-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <section
+        id="overall-checklist"
+        className="mb-6 scroll-mt-6 rounded-3xl border-2 border-orange-500/40 bg-gradient-to-b from-orange-950/40 to-slate-800/90 p-6 shadow-lg shadow-orange-950/20"
+      >
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold">Overall checklist</h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Check off how-to steps for this greentagging effort. Attach photos to any step as proof of work.
-              Case tabs below still have their own stage directions.
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-300/90">
+              Start here
+            </p>
+            <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-50">Overall checklist</h3>
+            <p className="mt-2 max-w-2xl text-sm text-slate-300">
+              Check off each step and attach photos as you work. Process case directions are further down if you
+              need stage-by-stage help.
             </p>
           </div>
-          {assignment.checklistItems?.length ? (
-            <p className="text-sm font-medium text-orange-300">
-              {assignment.checklistItems.filter((item) => item.completedAt).length}/
-              {assignment.checklistItems.length} done
+          {checklistItems.length ? (
+            <p className="rounded-full bg-orange-500/20 px-3 py-1 text-sm font-semibold text-orange-200">
+              {checklistDone}/{checklistItems.length} done
             </p>
           ) : null}
         </div>
@@ -538,9 +461,9 @@ export default function GreentaggingDetailPage() {
           </pre>
         ) : null}
 
-        {(assignment.checklistItems || []).length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-600 px-4 py-6 text-center">
-            <p className="text-sm text-slate-400">No checklist items yet.</p>
+        {checklistItems.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-orange-400/40 bg-slate-950/40 px-4 py-8 text-center">
+            <p className="text-sm text-slate-300">No checklist items yet.</p>
             {writable ? (
               <button
                 type="button"
@@ -565,7 +488,7 @@ export default function GreentaggingDetailPage() {
           </div>
         ) : (
           <ul className="space-y-3">
-            {assignment.checklistItems.map((item) => {
+            {checklistItems.map((item) => {
               const done = Boolean(item.completedAt);
               const photos = item.photos || [];
               return (
@@ -573,7 +496,7 @@ export default function GreentaggingDetailPage() {
                   key={item.id}
                   className={[
                     "rounded-2xl border px-3 py-3",
-                    done ? "border-orange-500/30 bg-orange-950/20" : "border-slate-700 bg-slate-900/50",
+                    done ? "border-orange-500/30 bg-orange-950/20" : "border-slate-600 bg-slate-950/50",
                   ].join(" ")}
                 >
                   <div className="flex items-start gap-3">
@@ -600,7 +523,7 @@ export default function GreentaggingDetailPage() {
                       aria-label={item.label}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className={done ? "text-sm text-slate-400 line-through" : "text-sm text-slate-100"}>
+                      <p className={done ? "text-sm text-slate-400 line-through" : "text-sm font-medium text-slate-100"}>
                         {item.label}
                       </p>
                       {done && item.completedBy ? (
@@ -766,6 +689,124 @@ export default function GreentaggingDetailPage() {
           </form>
         ) : null}
       </section>
+
+      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+        <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+          <h3 className="text-lg font-semibold">Asset</h3>
+          <dl className="mt-4 space-y-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-400">Name</dt>
+              <dd className="font-medium">
+                {assignment.asset ? (
+                  <Link className="text-orange-300 hover:underline" to={`/assets/${assignment.asset.id}`}>
+                    {assignment.asset.name}
+                  </Link>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-400">Site</dt>
+              <dd className="font-medium">{assignment.asset?.site?.name || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-400">Serial</dt>
+              <dd className="font-medium">{assignment.asset?.serialNumber || "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-400">Assignee</dt>
+              <dd className="font-medium">
+                {assignment.assignee?.name || assignment.assignee?.email || "Unassigned"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-400">Completed</dt>
+              <dd className="font-medium">{formatDate(assignment.completedAt)}</dd>
+            </div>
+          </dl>
+          {assignment.summary ? <p className="mt-4 text-sm text-slate-300">{assignment.summary}</p> : null}
+        </section>
+
+        {writable ? (
+          <form
+            className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm"
+            onSubmit={handleSaveAssignment}
+          >
+            <h3 className="text-lg font-semibold">Assignment details</h3>
+            <FormField
+              label="Title"
+              name="title"
+              value={assignmentForm.title}
+              onChange={(e) => setAssignmentForm((c) => ({ ...c, title: e.target.value }))}
+              required
+            />
+            <FormField
+              label="Asset"
+              name="assetId"
+              as="select"
+              value={assignmentForm.assetId}
+              onChange={(e) => setAssignmentForm((c) => ({ ...c, assetId: e.target.value }))}
+              options={assets.map((asset) => ({
+                value: asset.id,
+                label: `${asset.name}${asset.site?.name ? ` · ${asset.site.name}` : ""}`,
+              }))}
+            />
+            <FormField
+              label="Status"
+              name="status"
+              as="select"
+              value={assignmentForm.status}
+              onChange={(e) => setAssignmentForm((c) => ({ ...c, status: e.target.value }))}
+              options={statusOptions}
+            />
+            <FormField
+              label="Assignee"
+              name="assigneeId"
+              as="select"
+              value={assignmentForm.assigneeId}
+              onChange={(e) => setAssignmentForm((c) => ({ ...c, assigneeId: e.target.value }))}
+              options={[
+                { value: "", label: "Unassigned" },
+                ...assignees.map((person) => ({
+                  value: person.id,
+                  label: `${person.name || person.email} (${getRoleLabel(person.role)})`,
+                })),
+              ]}
+            />
+            <FormField
+              label="Notes from field"
+              name="summary"
+              as="textarea"
+              value={assignmentForm.summary}
+              onChange={(e) => setAssignmentForm((c) => ({ ...c, summary: e.target.value }))}
+            />
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Save assignment
+              </button>
+              {can("greentagging:delete") ? (
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleDeleteAssignment}
+                  className="rounded-xl border border-rose-300/40 px-4 py-2 text-sm font-semibold text-rose-300"
+                >
+                  Delete assignment
+                </button>
+              ) : null}
+            </div>
+          </form>
+        ) : (
+          <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+            <p className="text-sm text-slate-400">You can view the checklist and process cases for this assignment.</p>
+          </section>
+        )}
+      </div>
 
       <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
         <div className="mb-4">
