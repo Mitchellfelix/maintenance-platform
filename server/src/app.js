@@ -29,7 +29,14 @@ function createApp() {
   ensureUploadDirs();
   const app = express();
 
-  app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+  // Railway / reverse proxies terminate TLS; needed for secure cookies and public URLs.
+  app.set("trust proxy", 1);
+
+  const corsOrigin =
+    !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === "true"
+      ? true
+      : process.env.CORS_ORIGIN;
+  app.use(cors({ origin: corsOrigin }));
   app.use(express.json());
   app.use(express.static(path.join(__dirname, "..", "public")));
   app.use("/uploads", express.static(UPLOAD_ROOT));

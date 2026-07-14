@@ -1,70 +1,60 @@
 # EMAT — Team setup (download & go)
 
-One shared server and database. Teammates **do not** need git, Node, or Docker.
+One shared **cloud** server and database. Teammates do **not** need git, Node, Docker, or your laptop.
 
 | Role | What they do | Result |
 |------|----------------|--------|
-| **Host (you)** | `npm run team:serve` | Share the **Join link** |
-| **Team member** | Open Join link → browser or Download for Mac | Same data as everyone else |
+| **Host (you)** | Deploy once on [Railway](./RAILWAY.md) | Share the HTTPS **Join** link |
+| **Team member** | Open Join → browser or Mac install | Same data as everyone else |
+
+Primary guide: **[RAILWAY.md](./RAILWAY.md)**.
 
 ---
 
-## Part 1 — Host: start the shared server
-
-**Requirements:** Docker Desktop, this repo on the host Mac.
+## Part 1 — Host: Railway (always on)
 
 ```bash
-cd ~/maintenance-platform
-cp server/.env.example server/.env   # if you have not already
-# Edit server/.env and set a strong JWT_SECRET
+npm install -g @railway/cli
+railway login
+railway link          # after creating the project + Postgres in the dashboard
+# Set JWT_SECRET, EMAT_APP_URL, CORS_ORIGIN=true, EMAT_DATA_DIR=/data
+# Mount volume at /data — see RAILWAY.md
 
-npm run team:serve
+railway up
+EMAT_CONFIRM_MIGRATE=YES npm run railway:migrate
+npm run railway:publish-mac
 ```
 
-The script packages the Mac app on first run (if needed), starts the stack, and prints:
+Send your team:
 
 ```text
-Send your team this Join link:
-  http://192.168.x.x:3000/join
+https://YOUR-APP.up.railway.app/join
 ```
 
-**Keep the host machine running** (or deploy the same stack on a company VM).
-
-### Optional: refresh the Mac download after client changes
-
-```bash
-npm run package:team-client
-```
-
-### Stop the server
-
-```bash
-docker compose --profile team down
-```
+After go-live, local LAN hosting is optional only (see bottom).
 
 ---
 
-## Part 2 — Team members (recommended)
-
-Share only the **Join link**.
+## Part 2 — Team members
 
 ### A. Browser (fastest)
 
-1. Open `http://YOUR-TEAM-URL:3000/join`
-2. Click **Open in this browser**
+1. Open `https://YOUR-APP.up.railway.app/join`
+2. Click **Play in this browser**
 3. Sign in or **Request access**
 
 ### B. Mac desktop app
 
 1. Open the Join link
-2. Click **Download for Mac**
-3. Unzip and open **EMAT Tracking Database**
-4. Paste the Team URL once (base URL, without `/join`)
-5. Sign in or **Request access**
+2. Click **Copy** on the Terminal command (or paste):
 
-Daily: open the app from Applications / Dock (or bookmark the Team URL).
+   ```bash
+   curl -fsSL "https://YOUR-APP.up.railway.app/install-mac" | bash
+   ```
 
-> Gatekeeper: if macOS blocks the app, right-click → **Open** the first time (internal unsigned build).
+3. Sign in or **Request access**
+
+Daily: open **EMAT Tracking Database** from Applications, or bookmark the Join / app URL.
 
 ---
 
@@ -74,8 +64,8 @@ The Mac desktop app supports both modes:
 
 | Mode | Behavior |
 |------|----------|
-| **Offline / local** | Local Docker Postgres on that Mac (`npm run app:install` once). Works without the team network. |
-| **Online / team** | Connects to the shared Team URL. |
+| **Offline / local** | Local Docker Postgres on that Mac (`npm run app:install` once). Works without the network. |
+| **Online / team** | Connects to the Railway Team URL. |
 
 **Sync (Help → Sync now…)** merges both databases using **newest update wins** for:
 
@@ -83,7 +73,7 @@ The Mac desktop app supports both modes:
 - Greentagging jobs / cases / checklist steps
 - Green Tagging Procedures (standalone checklists)
 
-Not synced yet: photos, SOPs, audit log, access requests. Use the **same email/password** on local and team. Deletion conflicts are not tombstoned in v1.
+Not synced yet: photos, SOPs, audit log, access requests. Use the **same email/password** on local and team.
 
 ```text
 1. Work offline (or on team) as usual
@@ -91,60 +81,29 @@ Not synced yet: photos, SOPs, audit log, access requests. Use the **same email/p
 3. Sign in once → changes flow both directions
 ```
 
+### Access
+
 1. First user on an empty database can register and sign in immediately.
 2. Later users: **Request access** on the login page → admin approves under **Access requests**.
-3. Promote admin (on host machine, from project folder):
+3. Promote admin (against Railway DB):
 
    ```bash
-   node scripts/promote-admin.js user@company.com
+   RAILWAY_DATABASE_URL='postgresql://…' node scripts/promote-admin.js user@company.com
    ```
 
-### Optional: email + Slack on every access request
+   (Or `railway run node scripts/promote-admin.js user@company.com` from a linked clone.)
 
-On the **host** `server/.env`, configure one email path and/or Slack:
+### Optional: email + Slack
 
-```bash
-APP_URL=http://YOUR-TEAM-URL:3000
-
-# Option A — Resend
-RESEND_API_KEY=re_xxxxxxxx
-MAIL_FROM="EMAT <notifications@yourcompany.com>"
-
-# Option B — SMTP
-# SMTP_HOST=smtp.example.com
-# SMTP_PORT=587
-# SMTP_USER=emat@yourcompany.com
-# SMTP_PASS=app-password
-# MAIL_FROM="EMAT <emat@yourcompany.com>"
-
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
-```
-
-Restart the host after editing env.
-
----
-
-## Host: keep the team server always on
-
-Don’t leave `npm start` in a random Terminal — it dies when that process exits.
+On the Railway web service variables:
 
 ```bash
-npm run team:autostart   # KeepAlive LaunchAgent — restarts if the API crashes
+APP_URL=https://YOUR-APP.up.railway.app
+EMAT_APP_URL=https://YOUR-APP.up.railway.app
+# RESEND_API_KEY=…
+# MAIL_FROM=…
+# SLACK_WEBHOOK_URL=…
 ```
-
-Then once:
-
-1. **Docker Desktop** → start at login (Postgres).
-2. **Energy** → prevent sleep while plugged in.
-3. **Firewall** (important on managed Macs): System Settings → Network → Firewall → Options  
-   → turn **OFF** “Enable stealth mode”  
-   → allow **Node** incoming if asked.
-
-Share: `http://YOUR-LAN-IP:3000/join`  
-Logs: `~/Library/Logs/EMAT/team-server.log`  
-Stop: `npm run team:autostart:off`
-
-If teammates still time out while **you** can open the Join link on this Mac: company Wi‑Fi may block device-to-device traffic (client isolation). Ask IT, use a personal hotspot temporarily, or have them use a machine that can reach your IP.
 
 ---
 
@@ -153,14 +112,13 @@ If teammates still time out while **you** can open the Join link on this Mac: co
 ```text
 EMAT Tracking Database — join the team
 
-1. Open: http://YOUR-TEAM-URL:3000/join
+1. Open: https://YOUR-APP.up.railway.app/join
 2. Fastest: click “Play in this browser”
-3. Mac app: copy the Terminal command from that page (or paste this):
+3. Mac app: copy the Terminal command from that page, or:
 
-   curl -fsSL http://YOUR-TEAM-URL:3000/install-mac | bash
+   curl -fsSL "https://YOUR-APP.up.railway.app/install-mac" | bash
 
-   That downloads, installs to ~/Applications, clears Gatekeeper, and opens the app
-   with the Team URL already set. Sign in → Request access if first time.
+   Sign in → Request access if first time.
 ```
 
 ---
@@ -169,28 +127,41 @@ EMAT Tracking Database — join the team
 
 | Problem | Fix |
 |---------|-----|
-| Cannot reach Join link | Same Wi‑Fi/VPN as host; host firewall allows port 3000 |
-| No Mac download button | Host runs `npm run package:team-client`, then refresh Join page |
-| App can’t reach server | Paste Team URL **without** `/join`; confirm host is still running |
-| Host IP changed | Re-run `npm run team:serve`; send the new Join link |
-| Old UI after update | Host: `docker compose --profile team up -d --build` |
+| Cannot reach Join link | Confirm Railway service is online; use the HTTPS domain from Networking |
+| No Mac download | Host runs `npm run railway:publish-mac` |
+| App can’t reach server | Team URL must be the HTTPS origin (no `/join`) |
+| Old UI after update | Redeploy Railway web service (GitHub push or `railway up`) |
+| Photos missing | `npm run railway:publish-uploads` |
+
+Full Railway runbook: [RAILWAY.md](./RAILWAY.md).
+
+---
+
+## Emergency / local-only hosting (not for teammates)
+
+If Railway is unavailable and you need a temporary LAN host:
+
+```bash
+npm run team:serve          # Docker app + DB on this Mac
+npm run team:autostart      # KeepAlive on login (laptop must stay awake)
+```
+
+Share `http://YOUR-LAN-IP:3000/join` only on the same network. Prefer Railway for anything lasting.
+
+Stop local host: `npm run team:autostart:off` and `docker compose --profile team down`.
 
 ---
 
 ## Advanced / developers
 
-Clone-based setup (only if you need to develop against the shared server):
-
 ```bash
 git clone https://github.com/Mitchellfelix/maintenance-platform.git
 cd maintenance-platform
-npm run team:connect -- http://YOUR-TEAM-URL:3000
+npm run team:connect -- https://YOUR-APP.up.railway.app
 emat
 ```
 
 | Mode | Command | URL |
 |------|---------|-----|
-| **Team (shared DB)** | Host: `npm run team:serve` · Members: Join link | Your Team URL |
+| **Team (shared DB)** | Railway deploy · Members: Join link | `https://….up.railway.app` |
 | **Solo (local DB)** | `npm run app:install` then `emat` | http://localhost:3000 |
-
-`team:connect` writes `EMAT_APP_URL` in `server/.env` so the developer Dock app skips local Docker and loads the shared server.

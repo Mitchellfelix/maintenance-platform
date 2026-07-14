@@ -23,7 +23,11 @@
     "team:connect": "bash scripts/team-connect.sh",
     "team:autostart": "bash scripts/install-team-autostart.sh",
     "team:autostart:off": "bash scripts/uninstall-team-autostart.sh",
-    "package:team-client": "bash scripts/package-team-client.sh"
+    "package:team-client": "bash scripts/package-team-client.sh",
+    "railway:migrate": "bash scripts/migrate-to-railway.sh",
+    "railway:publish-mac": "bash scripts/publish-mac-to-railway.sh",
+    "railway:publish-uploads": "bash scripts/publish-uploads-to-railway.sh",
+    "railway:bootstrap": "bash scripts/railway-bootstrap.sh"
   },
   "workspaces": [
     "client",

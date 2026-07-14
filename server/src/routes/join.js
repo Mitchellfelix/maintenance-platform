@@ -3,7 +3,9 @@ const os = require("os");
 const path = require("path");
 const { execFileSync } = require("child_process");
 
-const DOWNLOADS_DIR = path.join(__dirname, "..", "..", "public", "downloads");
+const DOWNLOADS_DIR = process.env.EMAT_DOWNLOADS_DIR
+  ? path.resolve(process.env.EMAT_DOWNLOADS_DIR)
+  : path.join(__dirname, "..", "..", "public", "downloads");
 const MAC_ZIP = "EMAT-mac.zip";
 const READY_NAME = "EMAT-Tracking-Database.zip";
 const APP_NAME = "EMAT Tracking Database.app";

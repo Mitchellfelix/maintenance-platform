@@ -26,23 +26,25 @@ Then rebuild/relaunch so desktop clients pick up the UI.
 
 ## Team setup (shared URL)
 
-For one database and a **download-and-go** Join link for the whole team, see **[docs/TEAM-SETUP.md](docs/TEAM-SETUP.md)**.
+For one database and a **download-and-go** Join link for the whole team, see **[docs/TEAM-SETUP.md](docs/TEAM-SETUP.md)** and **[docs/RAILWAY.md](docs/RAILWAY.md)**.
 
-Quick version:
+Quick version (always-on cloud — recommended):
 
 ```bash
-# Host (keep this machine / Docker running)
-npm run team:serve          # prints Join link, e.g. http://192.168.1.50:3000/join
+# Host (once): deploy on Railway — see docs/RAILWAY.md
+railway up
+EMAT_CONFIRM_MIGRATE=YES npm run railway:migrate
+npm run railway:publish-mac
 
 # Teammates
-# Open the Join link → “Open in this browser” or “Download for Mac”
-# (no git / Node / Docker on teammate machines)
+# Open https://YOUR-APP.up.railway.app/join
+# (no git / Node / Docker / your laptop needed)
 ```
 
-Rebuild the Mac download after Electron client changes:
+Rebuild the Mac download after Electron client changes, then republish:
 
 ```bash
-npm run package:team-client
+npm run railway:publish-mac
 ```
 
 ## Local setup
