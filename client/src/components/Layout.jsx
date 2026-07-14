@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const navItems = [
@@ -25,6 +27,14 @@ function navClassName({ isActive }) {
 
 export default function Layout() {
   const { user, logout, can, roleLabel } = useAuth();
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/api/version")
+      .then((response) => setVersion(response.data.version || ""))
+      .catch(() => setVersion(""));
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
@@ -39,6 +49,7 @@ export default function Layout() {
               EMAT Tracking Database
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">Navy Sustainment</h1>
+            {version ? <p className="mt-2 text-xs text-slate-500">v{version}</p> : null}
           </div>
 
           <nav className="flex flex-col gap-1.5">

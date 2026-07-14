@@ -24,6 +24,14 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [version, setVersion] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/api/version")
+      .then((response) => setVersion(response.data.version || ""))
+      .catch(() => setVersion(""));
+  }, []);
 
   useEffect(() => {
     if (mode !== "register") return;
@@ -114,6 +122,7 @@ export default function LoginPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.35em] text-orange-400">
           EMAT Tracking Database
         </p>
+        {version ? <p className="mt-2 text-xs text-slate-500">Version {version}</p> : null}
         <h2 className="mt-3 text-3xl font-bold">{mode === "login" ? "Sign in" : "Request access"}</h2>
         <p className="mt-2 text-sm text-slate-400">
           {mode === "login"

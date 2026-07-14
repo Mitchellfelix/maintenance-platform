@@ -6,6 +6,24 @@ Standalone maintenance platform app with:
 - `server/` Express + Prisma backend
 - PostgreSQL database via Prisma migrations
 
+Current app version: see root `package.json` (`1.0.0`). Shown in the sidebar and on the sign-in screen; also available at `/api/version`.
+
+## App versioning
+
+Bump the product version in **all three** `package.json` files (root, `client/`, `server/`):
+
+```bash
+# Example: 1.0.0 → 1.1.0
+npm version 1.1.0 --no-git-tag-version --workspace client --workspace server
+npm pkg set version=1.1.0
+git commit -am "Release v1.1.0"
+git tag v1.1.0
+```
+
+Then rebuild/relaunch so desktop clients pick up the UI.
+
+> Note: **Department SOP versions** (1.0 → 1.1 document history) are separate — those live on each SOP record, not the app release.
+
 ## Team setup (shared URL)
 
 For one database and one URL for the whole team, see **[docs/TEAM-SETUP.md](docs/TEAM-SETUP.md)**.
