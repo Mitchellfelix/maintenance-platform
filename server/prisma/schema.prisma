@@ -52,6 +52,14 @@ enum AccessRequestStatus {
   CANCELLED
 }
 
+enum GreenTagStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
 // ——— Auth & people ———
 
 model User {
@@ -75,6 +83,7 @@ model User {
   sopVersionsPublished SopVersion[]   @relation("SopVersionPublisher")
   invitesSent         UserInvite[]    @relation("InviteSender")
   passwordResets      PasswordReset[]
+  greenTagAssignments GreenTagAssignment[] @relation("GreenTagAssignee")
 }
 
 // ——— Locations & equipment ———
@@ -105,6 +114,7 @@ model Asset {
 
   workOrders WorkOrder[]
   inventoryParts InventoryPart[]
+  greenTagAssignments GreenTagAssignment[]
 
   @@index([siteId])
   @@index([operationalStatus])
@@ -264,6 +274,50 @@ model PasswordReset {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ——— Greentagging ———
+
+model GreenTagAssignment {
+  id          String         @id @default(cuid())
+  title       String
+  summary     String?
+  status      GreenTagStatus @default(OPEN)
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  assigneeId String?
+  assignee   User?   @relation("GreenTagAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  dueAt       DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cases GreenTagCase[]
+
+  @@index([assetId])
+  @@index([status])
+  @@index([assigneeId])
+}
+
+/// Process case within a greentagging effort — shown as subtabs on the assignment.
+model GreenTagCase {
+  id           String              @id @default(cuid())
+  assignmentId String
+  assignment   GreenTagAssignment  @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  title        String
+  sortOrder    Int                 @default(0)
+  /// Directions / how-to for completing this process case.
+  directions   String?
+  status       GreenTagStatus      @default(OPEN)
+  completedAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([assignmentId])
+  @@index([status])
 }
 
 // ——— Inventory ———

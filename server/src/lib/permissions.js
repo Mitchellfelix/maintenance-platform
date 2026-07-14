@@ -46,6 +46,11 @@ const PERMISSIONS = {
   "time-entries:write": ["ADMIN", "OPS_LEAD", "OPERATOR"],
   "time-entries:report": ["ADMIN", "OPS_LEAD"],
 
+  // Greentagging
+  "greentagging:read": ROLES,
+  "greentagging:write": ["ADMIN", "OPS_LEAD", "OPERATOR"],
+  "greentagging:delete": ["ADMIN", "OPS_LEAD"],
+
   // Users (admin only)
   "users:read": ["ADMIN"],
   "users:update": ["ADMIN"],

@@ -108,8 +108,14 @@ export default function AssetDetailPage() {
         title={asset.name}
         description={asset.site?.name || "Unknown site"}
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <StatusBadge value={asset.operationalStatus} />
+            <Link
+              to={`/greentagging?assetId=${asset.id}`}
+              className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium"
+            >
+              Greentagging
+            </Link>
             <Link to="/assets" className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium">
               Back to assets
             </Link>

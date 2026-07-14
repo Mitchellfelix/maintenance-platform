@@ -15,6 +15,7 @@ const auditRoutes = require("./routes/audit");
 const accessRequestRoutes = require("./routes/accessRequests");
 const inventoryRoutes = require("./routes/inventory");
 const sopRoutes = require("./routes/sops");
+const greenTagRoutes = require("./routes/greentagging");
 
 function createApp() {
   const app = express();
@@ -31,6 +32,7 @@ function createApp() {
   app.use("/api/assets", assetRoutes);
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/sops", sopRoutes);
+  app.use("/api/greentagging", greenTagRoutes);
   app.use("/api/time-entries", timeEntryRoutes);
   app.use("/api/workorders/:workOrderId/time-entries", workOrderTimeEntryRoutes);
   app.use("/api/workorders", workOrderRoutes);

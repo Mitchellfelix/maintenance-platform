@@ -23,6 +23,8 @@ import InviteAcceptPage from "./pages/InviteAcceptPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import HoursReportPage from "./pages/HoursReportPage.jsx";
+import GreentaggingPage from "./pages/GreentaggingPage.jsx";
+import GreentaggingDetailPage from "./pages/GreentaggingDetailPage.jsx";
 
 export default function App() {
   return (
@@ -48,6 +50,8 @@ export default function App() {
             <Route path="/assets/:id" element={<AssetDetailPage />} />
             <Route path="/workorders" element={<WorkOrdersPage />} />
             <Route path="/workorders/:id" element={<WorkOrderDetailPage />} />
+            <Route path="/greentagging" element={<GreentaggingPage />} />
+            <Route path="/greentagging/:id" element={<GreentaggingDetailPage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/inventory/:id" element={<InventoryPartDetailPage />} />
             <Route path="/sops" element={<SopsPage />} />
