@@ -1,11 +1,13 @@
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
-const AdmZip = require("adm-zip");
+const { execFileSync } = require("child_process");
 
 const DOWNLOADS_DIR = path.join(__dirname, "..", "..", "public", "downloads");
 const MAC_ZIP = "EMAT-mac.zip";
 const READY_NAME = "EMAT-Tracking-Database.zip";
-const DEFAULTS_ENTRY = "EMAT Tracking Database.app/Contents/Resources/team-defaults.json";
+const APP_NAME = "EMAT Tracking Database.app";
+const DEFAULTS_REL = path.join(APP_NAME, "Contents", "Resources", "team-defaults.json");
 
 function escapeHtml(value) {
   return String(value)
@@ -29,35 +31,69 @@ function hasMacDownload() {
   return fs.existsSync(baseZipPath());
 }
 
-/** Inject this host’s Team URL so the Mac app opens ready to play. */
-function buildReadyZipBuffer(teamUrl) {
-  const zip = new AdmZip(baseZipPath());
-  const payload = Buffer.from(
-    JSON.stringify(
-      {
-        mode: "online",
-        teamUrl: String(teamUrl || "").replace(/\/+$/, ""),
-      },
-      null,
-      2,
-    ),
-    "utf8",
-  );
+/**
+ * Inject this host’s Team URL without corrupting the .app (macOS apps need
+ * Frameworks symlinks — never rewrite the zip with adm-zip).
+ */
+function buildReadyZipFile(teamUrl) {
+  const stage = fs.mkdtempSync(path.join(os.tmpdir(), "emat-ready-"));
+  const outZip = path.join(stage, READY_NAME);
+  try {
+    execFileSync("ditto", ["-x", "-k", baseZipPath(), stage], { stdio: "pipe" });
+    const defaultsPath = path.join(stage, DEFAULTS_REL);
+    fs.mkdirSync(path.dirname(defaultsPath), { recursive: true });
+    fs.writeFileSync(
+      defaultsPath,
+      `${JSON.stringify(
+        {
+          mode: "online",
+          teamUrl: String(teamUrl || "").replace(/\/+$/, ""),
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
 
-  const existing = zip.getEntry(DEFAULTS_ENTRY);
-  if (existing) {
-    zip.updateFile(DEFAULTS_ENTRY, payload);
-  } else {
-    zip.addFile(DEFAULTS_ENTRY, payload);
+    const appPath = path.join(stage, APP_NAME);
+    if (fs.existsSync(appPath)) {
+      try {
+        execFileSync("codesign", ["--force", "--deep", "--sign", "-", appPath], { stdio: "pipe" });
+      } catch {
+        // Ad-hoc sign is best-effort on non-mac hosts.
+      }
+    }
+
+    const fixSrc = path.join(stage, "Fix & Open.command");
+    if (!fs.existsSync(fixSrc)) {
+      const fixFallback = path.join(__dirname, "..", "..", "..", "electron", "Fix & Open.command");
+      if (fs.existsSync(fixFallback)) {
+        fs.copyFileSync(fixFallback, fixSrc);
+      }
+    }
+    if (fs.existsSync(fixSrc)) {
+      fs.chmodSync(fixSrc, 0o755);
+    }
+
+    const entries = [APP_NAME];
+    if (fs.existsSync(fixSrc)) entries.push("Fix & Open.command");
+    execFileSync("zip", ["-ry", outZip, ...entries], { cwd: stage, stdio: "pipe" });
+    return fs.readFileSync(outZip);
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
   }
-  return zip.toBuffer();
 }
 
 function renderJoinPage({ teamUrl, macReady }) {
   const safeUrl = escapeHtml(teamUrl);
   const downloadBlock = macReady
     ? `<a class="btn primary" href="/downloads/EMAT-ready.zip">Download Mac app</a>
-       <p class="hint">Unzip → open <strong>EMAT Tracking Database</strong> → sign in. Team URL is already baked in — no setup.</p>`
+       <p class="hint">Unzip, then open the app. If macOS says <strong>damaged</strong>, double-click <strong>Fix &amp; Open</strong> in the same folder (clears Gatekeeper).</p>
+       <p class="hint">Prefer no Gatekeeper warning? Paste this in Terminal:</p>
+       <pre class="term">curl -fsSL "${safeUrl}/downloads/EMAT-ready.zip" -o ~/Downloads/EMAT.zip &amp;&amp; \\
+unzip -o ~/Downloads/EMAT.zip -d ~/Downloads/EMAT &amp;&amp; \\
+xattr -cr ~/Downloads/EMAT/*.app &amp;&amp; \\
+open ~/Downloads/EMAT/*.app</pre>`
     : `<p class="warn">Mac download is not packaged yet. Ask your host to run <code>npm run package:team-client</code>, or use the browser below.</p>`;
 
   return `<!doctype html>
@@ -96,6 +132,12 @@ function renderJoinPage({ teamUrl, macReady }) {
     .hint, .warn { margin: 8px 0 0; font-size: 13px; }
     .warn { color: #fdba74; }
     code { color: #fdba74; }
+    pre.term {
+      margin: 8px 0 0; padding: 12px 14px; border-radius: 12px; overflow-x: auto;
+      background: #020617; border: 1px solid #334155; color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
+      white-space: pre-wrap; word-break: break-all;
+    }
     .note { margin-top: 24px; padding-top: 16px; border-top: 1px solid #334155; font-size: 13px; color: #94a3b8; }
     .steps { margin: 0 0 18px; padding-left: 18px; color: #cbd5e1; }
     .steps li { margin: 6px 0; }
@@ -108,14 +150,14 @@ function renderJoinPage({ teamUrl, macReady }) {
     <p>Same server, same data. Fastest paths:</p>
     <ol class="steps">
       <li><strong>Browser:</strong> play instantly below.</li>
-      <li><strong>Mac app:</strong> download → unzip → open → sign in (URL already set).</li>
+      <li><strong>Mac app:</strong> download → unzip → open (or Fix &amp; Open) → sign in.</li>
     </ol>
     <span class="url">${safeUrl}</span>
     <div class="actions">
       <a class="btn primary" href="/">Play in this browser</a>
       ${downloadBlock}
     </div>
-    <p class="note">First time? Use <strong>Request access</strong> on login, then wait for admin approval. macOS Gatekeeper: right-click the app → <strong>Open</strong> the first time.</p>
+    <p class="note">First time? Use <strong>Request access</strong> on login, then wait for admin approval.</p>
   </main>
 </body>
 </html>`;
@@ -137,7 +179,7 @@ function createReadyZipHandler() {
     }
     try {
       const teamUrl = detectPublicOrigin(req);
-      const buffer = buildReadyZipBuffer(teamUrl);
+      const buffer = buildReadyZipFile(teamUrl);
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="${READY_NAME}"`);
       res.setHeader("Content-Length", buffer.length);
@@ -156,6 +198,6 @@ module.exports = {
   MAC_ZIP,
   READY_NAME,
   hasMacDownload,
-  buildReadyZipBuffer,
+  buildReadyZipFile,
   detectPublicOrigin,
 };

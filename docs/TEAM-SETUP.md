@@ -130,8 +130,12 @@ Restart the host after editing env.
 EMAT Tracking Database — download & play
 
 1. Open: http://YOUR-TEAM-URL:3000/join
-2. Play in browser, OR Download Mac app → unzip → open → sign in
-   (Mac download already includes your Team URL — no paste step)
+2. Play in browser, OR download the Mac app → unzip → open → sign in
+   (Team URL is already baked in — no paste step)
+
+If macOS says the app is “damaged”: that is Gatekeeper on an unsigned LAN build.
+Double-click “Fix & Open.command” next to the app, or run:
+  xattr -cr "/path/to/EMAT Tracking Database.app"
 
 First login: Request access, then wait for admin approval.
 ```

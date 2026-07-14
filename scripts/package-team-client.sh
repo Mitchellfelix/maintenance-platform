@@ -7,6 +7,8 @@ ELECTRON_DIR="$ROOT/electron"
 OUT_DIR="$ROOT/dist/team-client"
 DOWNLOADS="$ROOT/server/public/downloads"
 TARGET_ZIP="$DOWNLOADS/EMAT-mac.zip"
+APP_NAME="EMAT Tracking Database.app"
+FIX_SCRIPT="$ELECTRON_DIR/Fix & Open.command"
 
 cd "$ELECTRON_DIR"
 
@@ -20,7 +22,6 @@ npm run pack
 
 mkdir -p "$DOWNLOADS"
 
-# Prefer the named artifact, otherwise pick the newest zip from the output dir.
 SOURCE_ZIP=""
 if [[ -f "$OUT_DIR/EMAT-mac.zip" ]]; then
   SOURCE_ZIP="$OUT_DIR/EMAT-mac.zip"
@@ -34,8 +35,32 @@ if [[ -z "$SOURCE_ZIP" || ! -f "$SOURCE_ZIP" ]]; then
   exit 1
 fi
 
-cp "$SOURCE_ZIP" "$TARGET_ZIP"
+STAGE="$(mktemp -d "${TMPDIR:-/tmp}/emat-team-pack.XXXXXX")"
+cleanup() { rm -rf "$STAGE"; }
+trap cleanup EXIT
+
+echo "Staging app (ad-hoc sign + Fix & Open helper)..."
+ditto -x -k "$SOURCE_ZIP" "$STAGE"
+APP_PATH="$STAGE/$APP_NAME"
+if [[ ! -d "$APP_PATH" ]]; then
+  echo "Packaging failed: $APP_NAME missing after unzip"
+  find "$STAGE" -maxdepth 2 -print
+  exit 1
+fi
+
+codesign --force --deep --sign - "$APP_PATH" >/dev/null 2>&1 || true
+
+chmod +x "$FIX_SCRIPT"
+cp "$FIX_SCRIPT" "$STAGE/Fix & Open.command"
+chmod +x "$STAGE/Fix & Open.command"
+
+rm -f "$TARGET_ZIP"
+(
+  cd "$STAGE"
+  zip -ry "$TARGET_ZIP" "$APP_NAME" "Fix & Open.command"
+)
+
 echo ""
 echo "Published: $TARGET_ZIP"
-echo "Serve with team:serve — teammates download from /downloads/EMAT-mac.zip"
+echo "If macOS says damaged: double-click “Fix & Open.command” after unzip."
 echo "Join page: http://<host>:3000/join"
