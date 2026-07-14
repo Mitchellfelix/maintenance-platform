@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY client/package*.json ./client/
 COPY server/package*.json ./server/
+COPY server/prisma ./server/prisma
 RUN npm install
 COPY . .
 RUN npm run build
