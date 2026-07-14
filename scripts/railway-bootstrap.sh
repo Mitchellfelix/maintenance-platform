@@ -5,17 +5,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+export PATH="/opt/homebrew/opt/libpq/bin:/usr/local/opt/libpq/bin:${PATH:-}"
+
 echo "EMAT → Railway go-live checklist"
 echo "================================"
 echo ""
 echo "Prereqs on this Mac:"
 if command -v railway >/dev/null 2>&1; then
-  echo "  [ok] railway CLI: $(railway version 2>/dev/null || railway --version 2>/dev/null || echo present)"
+  echo "  [ok] railway CLI"
 else
   echo "  [!!] install: npm install -g @railway/cli"
 fi
 if command -v psql >/dev/null 2>&1; then
-  echo "  [ok] psql"
+  echo "  [ok] psql ($(psql --version | head -1))"
 else
   echo "  [!!] install: brew install libpq && brew link --force libpq"
 fi

@@ -15,6 +15,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+export PATH="/opt/homebrew/opt/libpq/bin:/usr/local/opt/libpq/bin:${PATH:-}"
+
 if ! command -v railway >/dev/null 2>&1; then
   echo "Install the Railway CLI first:"
   echo "  npm install -g @railway/cli"
@@ -26,6 +28,7 @@ fi
 if ! command -v psql >/dev/null 2>&1; then
   echo "psql is required on this Mac (Postgres client)."
   echo "  brew install libpq && brew link --force libpq"
+  echo "  export PATH=\"/opt/homebrew/opt/libpq/bin:\$PATH\""
   exit 1
 fi
 
