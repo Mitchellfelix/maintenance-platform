@@ -1,6 +1,7 @@
 const request = require("supertest");
 const { createApp } = require("../src/app");
 const prisma = require("../src/lib/prisma");
+const { assertSafeTestDatabaseUrl } = require("./assertSafeTestDatabaseUrl");
 
 const hasDatabase = process.env.DB_TESTS_AVAILABLE === "true";
 const describeIfDb = hasDatabase ? describe : describe.skip;
@@ -10,6 +11,11 @@ function getApp() {
 }
 
 async function resetDatabase() {
+  const safety = assertSafeTestDatabaseUrl(process.env.DATABASE_URL);
+  if (!safety.ok) {
+    throw new Error(`Refusing to reset database: ${safety.reason}`);
+  }
+
   await prisma.passwordReset.deleteMany();
   await prisma.userInvite.deleteMany();
   await prisma.accessRequest.deleteMany();

@@ -126,17 +126,31 @@ Open **http://localhost:3000**. Express serves the compiled app plus `/api/*` ro
 
 ## Testing
 
-Integration tests require a PostgreSQL test database:
+Integration tests wipe **all rows** between cases. They must never use your live database.
 
 ```bash
+# 1. Copy env and keep the `_test` database name
 cp server/.env.test.example server/.env.test
-# edit DATABASE_URL for a dedicated test database
+
+# 2. Create the test database (Docker Postgres example)
+docker compose up -d db
+docker compose exec db psql -U maintenance -d maintenance_platform -c \
+  "CREATE DATABASE maintenance_platform_test;"
+
+# 3. Apply migrations to the test DB only
 cd server
-npm run db:deploy
+DATABASE_URL="postgresql://maintenance:maintenance@localhost:5432/maintenance_platform_test" npm run db:deploy
 npm test
 ```
 
-Tests are skipped automatically when `DATABASE_URL` is not configured.
+Guards reject any test `DATABASE_URL` that does not end in `_test` (and refuse `maintenance_platform`). Without `server/.env.test`, DB tests are skipped — they no longer fall back to `server/.env`.
+
+## Data durability
+
+- Docker Postgres uses a **named volume** (`maintenance_platform_pgdata`) that survives normal restarts.
+- Never run `docker compose down -v` unless you intend to destroy data.
+- Never run `npm test` against the live `DATABASE_URL`.
+- Prefer `npm run db:deploy` over `db:push` on environments with real data.
 
 ## Docker (full app)
 
