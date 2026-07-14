@@ -49,7 +49,7 @@ export default function Layout() {
               EMAT Tracking Database
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">Navy Sustainment</h1>
-            {version ? <p className="mt-2 text-xs text-slate-500">v{version}</p> : null}
+            {version ? <p className="mt-2 text-xs text-slate-500">V{version}</p> : null}
           </div>
 
           <nav className="flex flex-col gap-1.5">

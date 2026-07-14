@@ -122,7 +122,7 @@ export default function LoginPage() {
         <p className="text-sm font-semibold uppercase tracking-[0.35em] text-orange-400">
           EMAT Tracking Database
         </p>
-        {version ? <p className="mt-2 text-xs text-slate-500">Version {version}</p> : null}
+        {version ? <p className="mt-2 text-xs text-slate-500">V{version}</p> : null}
         <h2 className="mt-3 text-3xl font-bold">{mode === "login" ? "Sign in" : "Request access"}</h2>
         <p className="mt-2 text-sm text-slate-400">
           {mode === "login"
