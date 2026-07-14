@@ -24,7 +24,8 @@
     "files": [
       "team-client.js",
       "team-preload.js",
-      "team-setup.html"
+      "team-setup.html",
+      "sync-agent.js"
     ],
     "mac": {
       "category": "public.app-category.business",

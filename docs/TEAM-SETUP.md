@@ -68,7 +68,28 @@ Daily: open the app from Applications / Dock (or bookmark the Team URL).
 
 ---
 
-## Part 3 — Accounts
+## Online + offline sync
+
+The Mac desktop app supports both modes:
+
+| Mode | Behavior |
+|------|----------|
+| **Offline / local** | Local Docker Postgres on that Mac (`npm run app:install` once). Works without the team network. |
+| **Online / team** | Connects to the shared Team URL. |
+
+**Sync (Help → Sync now…)** merges both databases using **newest update wins** for:
+
+- Sites, assets, work orders, hours, inventory
+- Greentagging jobs / cases / checklist steps
+- Green Tagging Procedures (standalone checklists)
+
+Not synced yet: photos, SOPs, audit log, access requests. Use the **same email/password** on local and team. Deletion conflicts are not tombstoned in v1.
+
+```text
+1. Work offline (or on team) as usual
+2. When both sides are reachable: Help → Sync now…
+3. Sign in once → changes flow both directions
+```
 
 1. First user on an empty database can register and sign in immediately.
 2. Later users: **Request access** on the login page → admin approves under **Access requests**.

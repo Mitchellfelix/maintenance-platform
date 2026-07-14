@@ -46,6 +46,7 @@ function createApp() {
   app.use("/api/time-entries", timeEntryRoutes);
   app.use("/api/workorders/:workOrderId/time-entries", workOrderTimeEntryRoutes);
   app.use("/api/workorders", workOrderRoutes);
+  app.use("/api/sync", require("./routes/sync"));
   app.use(routes);
 
   app.get("*", (req, res) => {

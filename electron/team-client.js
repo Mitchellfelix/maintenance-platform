@@ -11,48 +11,77 @@ const path = require("path");
 const fs = require("fs");
 const http = require("http");
 const https = require("https");
+const { spawn } = require("child_process");
+const { syncBothWays } = require("./sync-agent");
 
 const APP_NAME = "EMAT Tracking Database";
 const HEALTH_PATH = "/api/health/db";
+const LOCAL_URL = "http://127.0.0.1:3000";
 
 let mainWindow = null;
-let teamUrl = "";
+let config = { mode: "", teamUrl: "", lastSyncAt: null };
+let stackStarted = false;
 
 function configPath() {
-  return path.join(app.getPath("userData"), "team-url.json");
+  return path.join(app.getPath("userData"), "emat-config.json");
 }
 
-function readSavedUrl() {
+function readConfig() {
   try {
     const raw = fs.readFileSync(configPath(), "utf8");
     const data = JSON.parse(raw);
-    const url = typeof data?.url === "string" ? data.url.trim() : "";
-    return url || "";
+    return {
+      mode: data.mode === "online" || data.mode === "offline" ? data.mode : "",
+      teamUrl: typeof data.teamUrl === "string" ? data.teamUrl.trim().replace(/\/+$/, "") : "",
+      lastSyncAt: typeof data.lastSyncAt === "string" ? data.lastSyncAt : null,
+    };
   } catch {
-    return "";
+    // migrate old team-url.json
+    try {
+      const legacy = path.join(app.getPath("userData"), "team-url.json");
+      const raw = fs.readFileSync(legacy, "utf8");
+      const data = JSON.parse(raw);
+      if (data?.url) {
+        return { mode: "online", teamUrl: String(data.url).replace(/\/+$/, ""), lastSyncAt: null };
+      }
+    } catch {
+      // ignore
+    }
+    return { mode: "", teamUrl: "", lastSyncAt: null };
   }
 }
 
-function saveTeamUrl(url) {
-  const cleaned = String(url || "")
-    .trim()
-    .replace(/\/+$/, "");
-  if (!/^https?:\/\//i.test(cleaned)) {
-    throw new Error("Team URL must start with http:// or https://");
-  }
+function writeConfig(next) {
+  config = { ...config, ...next };
   fs.mkdirSync(path.dirname(configPath()), { recursive: true });
-  fs.writeFileSync(configPath(), JSON.stringify({ url: cleaned }, null, 2));
-  teamUrl = cleaned;
-  return cleaned;
+  fs.writeFileSync(
+    configPath(),
+    JSON.stringify(
+      {
+        mode: config.mode,
+        teamUrl: config.teamUrl || "",
+        lastSyncAt: config.lastSyncAt || null,
+      },
+      null,
+      2,
+    ),
+  );
+  return config;
 }
 
-function clearTeamUrl() {
-  try {
-    fs.unlinkSync(configPath());
-  } catch {
-    // ignore
+function resolveProjectRoot() {
+  const marker = path.join(app.getPath("home"), ".emat", "home");
+  if (fs.existsSync(marker)) {
+    const root = fs.readFileSync(marker, "utf8").trim();
+    if (root && fs.existsSync(path.join(root, "scripts", "start-stack.sh"))) {
+      return root;
+    }
   }
-  teamUrl = "";
+  const candidate = path.join(__dirname, "..");
+  if (fs.existsSync(path.join(candidate, "scripts", "start-stack.sh"))) {
+    return candidate;
+  }
+  return null;
 }
 
 function pingHealth(baseUrl, timeoutMs = 4000) {
@@ -62,9 +91,7 @@ function pingHealth(baseUrl, timeoutMs = 4000) {
   } catch {
     return Promise.resolve(false);
   }
-
   const transport = healthUrl.protocol === "https:" ? https : http;
-
   return new Promise((resolve) => {
     const request = transport.get(healthUrl, { timeout: timeoutMs }, (response) => {
       response.resume();
@@ -78,27 +105,41 @@ function pingHealth(baseUrl, timeoutMs = 4000) {
   });
 }
 
-function setupHtmlPath() {
-  return path.join(__dirname, "team-setup.html");
-}
-
-function preloadPath() {
-  return path.join(__dirname, "team-preload.js");
-}
-
-function resolveDockIcon() {
-  const candidates = [
-    path.join(__dirname, "build", "icon.png"),
-    path.join(__dirname, "..", "client", "public", "icons", "icon.png"),
-    path.join(__dirname, "..", "client", "public", "icons", "icon.svg"),
-  ];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      const image = nativeImage.createFromPath(candidate);
-      if (!image.isEmpty()) return image;
+function waitForHealth(baseUrl, attempts = 60) {
+  return new Promise((resolve, reject) => {
+    let tries = 0;
+    async function attempt() {
+      if (await pingHealth(baseUrl)) {
+        resolve();
+        return;
+      }
+      tries += 1;
+      if (tries >= attempts) {
+        reject(new Error(`Cannot reach ${baseUrl}${HEALTH_PATH}`));
+        return;
+      }
+      setTimeout(attempt, 500);
     }
-  }
-  return null;
+    attempt();
+  });
+}
+
+function startLocalStack(projectRoot) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("bash", [path.join(projectRoot, "scripts", "start-stack.sh")], {
+      cwd: projectRoot,
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined },
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) {
+        stackStarted = true;
+        resolve();
+      } else {
+        reject(new Error(`Local stack failed to start (exit ${code}). Is Docker Desktop running?`));
+      }
+    });
+  });
 }
 
 function createWindow() {
@@ -109,12 +150,11 @@ function createWindow() {
     minHeight: 640,
     title: APP_NAME,
     backgroundColor: "#020617",
-    autoHideMenuBar: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      preload: preloadPath(),
+      preload: path.join(__dirname, "team-preload.js"),
     },
   });
 
@@ -129,48 +169,84 @@ function createWindow() {
 }
 
 function showSetup() {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    createWindow();
-  }
-  mainWindow.loadFile(setupHtmlPath());
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+  mainWindow.loadFile(path.join(__dirname, "team-setup.html"));
 }
 
-async function openTeamUrl(url) {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    createWindow();
+async function openUrl(url) {
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+  mainWindow.loadURL(url);
+}
+
+async function bootOffline() {
+  const projectRoot = resolveProjectRoot();
+  if (!projectRoot) {
+    dialog.showMessageBoxSync({
+      type: "warning",
+      title: APP_NAME,
+      message: "Offline mode needs a local project install",
+      detail:
+        "On this Mac run once from the repo:\n  npm run app:install\n\nOffline uses Docker Desktop + a local database. Online team mode does not need that.",
+    });
+    showSetup();
+    return;
+  }
+
+  try {
+    if (!(await pingHealth(LOCAL_URL))) {
+      await startLocalStack(projectRoot);
+      await waitForHealth(LOCAL_URL);
+    }
+    await openUrl(LOCAL_URL);
+  } catch (error) {
+    dialog.showErrorBox(APP_NAME, error.message || "Unable to start offline mode");
+    showSetup();
+  }
+}
+
+async function bootOnline() {
+  const url = config.teamUrl;
+  if (!url) {
+    showSetup();
+    return;
   }
 
   const ok = await pingHealth(url);
   if (!ok) {
-    const result = dialog.showMessageBoxSync(mainWindow, {
+    const result = dialog.showMessageBoxSync(mainWindow || undefined, {
       type: "warning",
-      buttons: ["Try anyway", "Change URL", "Cancel"],
+      buttons: ["Try anyway", "Change settings", "Switch to offline"],
       defaultId: 0,
-      cancelId: 2,
+      cancelId: 1,
       title: APP_NAME,
-      message: "Cannot reach the team server",
-      detail: `Tried ${url}${HEALTH_PATH}. Check that you are on the same network/VPN and the host is running.`,
+      message: "Team server not reachable",
+      detail: `${url} looks offline. You can keep trying, change the URL, or work offline (local DB) until sync.`,
     });
     if (result === 1) {
-      clearTeamUrl();
       showSetup();
       return;
     }
     if (result === 2) {
+      writeConfig({ mode: "offline" });
+      await bootOffline();
       return;
     }
   }
 
-  mainWindow.loadURL(url);
+  await openUrl(url);
 }
 
 async function boot() {
-  teamUrl = readSavedUrl();
-  if (!teamUrl) {
+  config = readConfig();
+  if (!config.mode) {
     showSetup();
     return;
   }
-  await openTeamUrl(teamUrl);
+  if (config.mode === "online") {
+    await bootOnline();
+    return;
+  }
+  await bootOffline();
 }
 
 function focusWindow() {
@@ -183,70 +259,151 @@ function focusWindow() {
   mainWindow.focus();
 }
 
+async function runSyncDialog() {
+  config = readConfig();
+  if (!config.teamUrl) {
+    dialog.showMessageBoxSync({
+      type: "info",
+      title: APP_NAME,
+      message: "Set a Team URL first",
+      detail: "Choose Online mode once (or Help → Change mode) and save your Team URL, then sync.",
+    });
+    showSetup();
+    return;
+  }
+
+  const creds = await promptCredentials();
+  if (!creds) return;
+
+  const localBase = LOCAL_URL;
+  const remoteBase = config.teamUrl;
+
+  if (!(await pingHealth(localBase))) {
+    dialog.showErrorBox(
+      APP_NAME,
+      "Local database is not running. Start offline mode once (or open the Dock app) so sync can read/write local data.",
+    );
+    return;
+  }
+  if (!(await pingHealth(remoteBase))) {
+    dialog.showErrorBox(APP_NAME, `Team server is not reachable at ${remoteBase}`);
+    return;
+  }
+
+  try {
+    const result = await syncBothWays({
+      localBase,
+      remoteBase,
+      email: creds.email,
+      password: creds.password,
+      since: config.lastSyncAt,
+    });
+    writeConfig({ lastSyncAt: result.nextSince });
+    dialog.showMessageBox({
+      type: "info",
+      title: APP_NAME,
+      message: "Sync complete",
+      detail: [
+        `Pulled from team: ${result.pulledFromRemote} row(s)`,
+        `Pulled from local: ${result.pulledFromLocal} row(s)`,
+        `Cursor: ${result.nextSince}`,
+        "",
+        "Newest change wins when both sides edited the same record. Photos are not synced yet.",
+      ].join("\n"),
+    });
+  } catch (error) {
+    dialog.showErrorBox(APP_NAME, error.message || "Sync failed");
+  }
+}
+
+function promptCredentials() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      ipcMain.removeHandler("team:sync-credentials");
+      if (!win.isDestroyed()) win.close();
+      resolve(value);
+    };
+
+    const win = new BrowserWindow({
+      width: 420,
+      height: 360,
+      title: "Sync credentials",
+      parent: mainWindow || undefined,
+      modal: Boolean(mainWindow),
+      resizable: false,
+      backgroundColor: "#020617",
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        preload: path.join(__dirname, "team-preload.js"),
+      },
+    });
+
+    ipcMain.handle("team:sync-credentials", async (_event, payload) => {
+      finish(payload?.email && payload?.password ? payload : null);
+      return { ok: true };
+    });
+
+    const html = `<!doctype html><html><head><meta charset="UTF-8" /><style>
+      body{font-family:system-ui;background:#020617;color:#f8fafc;padding:24px}
+      label{display:block;margin:12px 0 6px;font-size:13px}
+      input{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff}
+      button{margin-top:18px;width:100%;padding:10px;border:0;border-radius:10px;background:#f97316;color:#fff;font-weight:700}
+      p{color:#94a3b8;font-size:13px;line-height:1.4}
+    </style></head><body>
+      <p>Sign in with the <strong>same email/password</strong> on local and team.</p>
+      <label>Email</label><input id="email" type="email" />
+      <label>Password</label><input id="password" type="password" />
+      <button id="go">Sync now</button>
+      <script>
+        document.getElementById('go').onclick = async () => {
+          const email = document.getElementById('email').value.trim();
+          const password = document.getElementById('password').value;
+          await window.ematTeam.submitSyncCredentials({ email, password });
+        };
+      </script>
+    </body></html>`;
+
+    win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    win.on("closed", () => finish(null));
+  });
+}
+
 function buildMenu() {
   const template = [
     ...(process.platform === "darwin"
-      ? [
-          {
-            label: APP_NAME,
-            submenu: [
-              { role: "about" },
-              { type: "separator" },
-              { role: "services" },
-              { type: "separator" },
-              { role: "hide" },
-              { role: "hideOthers" },
-              { role: "unhide" },
-              { type: "separator" },
-              { role: "quit" },
-            ],
-          },
-        ]
+      ? [{ label: APP_NAME, submenu: [{ role: "about" }, { type: "separator" }, { role: "quit" }] }]
       : []),
-    {
-      label: "File",
-      submenu: [process.platform === "darwin" ? { role: "close" } : { role: "quit" }],
-    },
+    { label: "File", submenu: [process.platform === "darwin" ? { role: "close" } : { role: "quit" }] },
     {
       label: "Edit",
-      submenu: [
-        { role: "undo" },
-        { role: "redo" },
-        { type: "separator" },
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        { role: "selectAll" },
-      ],
+      submenu: [{ role: "undo" }, { role: "redo" }, { type: "separator" }, { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "selectAll" }],
     },
     {
       label: "View",
-      submenu: [
-        { role: "reload" },
-        { role: "forceReload" },
-        { role: "toggleDevTools" },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-      ],
+      submenu: [{ role: "reload" }, { role: "toggleDevTools" }, { type: "separator" }, { role: "togglefullscreen" }],
     },
     {
       label: "Help",
       submenu: [
         {
-          label: "Change Team URL…",
+          label: "Change mode / Team URL…",
+          click: () => showSetup(),
+        },
+        {
+          label: "Sync now…",
           click: () => {
-            clearTeamUrl();
-            showSetup();
+            void runSyncDialog();
           },
         },
         {
           label: "Open Team URL in Browser",
           click: () => {
-            const url = teamUrl || readSavedUrl();
+            const url = readConfig().teamUrl;
             if (url) void shell.openExternal(url);
           },
         },
@@ -256,13 +413,43 @@ function buildMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-ipcMain.handle("team:get-url", () => teamUrl || readSavedUrl());
+ipcMain.handle("team:get-config", () => readConfig());
+ipcMain.handle("team:get-url", () => readConfig().teamUrl || "");
 
-ipcMain.handle("team:save-url", async (_event, url) => {
-  const saved = saveTeamUrl(url);
-  await openTeamUrl(saved);
-  return { ok: true, url: saved };
+ipcMain.handle("team:save-config", async (_event, payload) => {
+  const mode = payload?.mode === "online" ? "online" : "offline";
+  let teamUrl = typeof payload?.teamUrl === "string" ? payload.teamUrl.trim().replace(/\/+$/, "") : "";
+  if (mode === "online") {
+    if (!/^https?:\/\//i.test(teamUrl)) {
+      throw new Error("Team URL must start with http:// or https://");
+    }
+  }
+  writeConfig({ mode, teamUrl: teamUrl || config.teamUrl || "" });
+  if (mode === "online") await bootOnline();
+  else await bootOffline();
+  return config;
 });
+
+// Back-compat for older setup form
+ipcMain.handle("team:save-url", async (_event, url) => {
+  writeConfig({ mode: "online", teamUrl: String(url || "").replace(/\/+$/, "") });
+  await bootOnline();
+  return { ok: true, url: config.teamUrl };
+});
+
+function resolveDockIcon() {
+  const candidates = [
+    path.join(__dirname, "build", "icon.png"),
+    path.join(__dirname, "..", "client", "public", "icons", "icon.svg"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      const image = nativeImage.createFromPath(candidate);
+      if (!image.isEmpty()) return image;
+    }
+  }
+  return null;
+}
 
 const gotLock = app.requestSingleInstanceLock();
 
@@ -270,24 +457,20 @@ if (!gotLock) {
   app.quit();
 } else {
   process.on("uncaughtException", (error) => {
-    console.error("Electron uncaught exception:", error);
-    dialog.showErrorBox(APP_NAME, error.message || "EMAT hit an unexpected error and needs to close.");
+    console.error(error);
+    dialog.showErrorBox(APP_NAME, error.message || "Unexpected error");
     app.quit();
   });
 
-  app.on("second-instance", () => {
-    focusWindow();
-  });
+  app.on("second-instance", () => focusWindow());
 
   app.whenReady().then(() => {
     app.setName(APP_NAME);
     buildMenu();
-
     if (process.platform === "darwin") {
       const icon = resolveDockIcon();
       if (icon) app.dock.setIcon(icon);
     }
-
     return boot();
   });
 

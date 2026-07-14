@@ -3,21 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Connect to EMAT</title>
+    <title>EMAT setup</title>
     <style>
       :root {
         color-scheme: dark;
-        --bg: #020617;
-        --card: #0f172a;
         --border: #334155;
-        --text: #f8fafc;
         --muted: #94a3b8;
         --accent: #f97316;
-        --accent-text: #fff7ed;
       }
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
       body {
         margin: 0;
         min-height: 100vh;
@@ -25,13 +19,13 @@
         background:
           radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 40%),
           linear-gradient(160deg, #020617 0%, #0f172a 55%, #111827 100%);
-        color: var(--text);
+        color: #f8fafc;
         display: grid;
         place-items: center;
         padding: 24px;
       }
       .card {
-        width: min(520px, 100%);
+        width: min(560px, 100%);
         background: rgba(15, 23, 42, 0.92);
         border: 1px solid var(--border);
         border-radius: 24px;
@@ -46,36 +40,32 @@
         color: #fdba74;
         font-weight: 700;
       }
-      h1 {
-        margin: 0 0 12px;
-        font-size: 28px;
-        line-height: 1.15;
+      h1 { margin: 0 0 12px; font-size: 28px; }
+      p { margin: 0 0 16px; color: var(--muted); line-height: 1.5; }
+      .modes { display: grid; gap: 12px; margin: 20px 0; }
+      .mode {
+        text-align: left;
+        border: 1px solid var(--border);
+        background: #020617;
+        color: inherit;
+        border-radius: 16px;
+        padding: 16px;
+        cursor: pointer;
       }
-      p {
-        margin: 0 0 20px;
-        color: var(--muted);
-        line-height: 1.5;
-      }
-      label {
-        display: block;
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 8px;
-      }
+      .mode.active, .mode:hover { border-color: var(--accent); }
+      .mode strong { display: block; margin-bottom: 6px; }
+      .mode span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+      label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 8px; }
       input {
         width: 100%;
         border: 1px solid var(--border);
         background: #020617;
-        color: var(--text);
+        color: #f8fafc;
         border-radius: 12px;
         padding: 12px 14px;
         font-size: 15px;
-        outline: none;
       }
-      input:focus {
-        border-color: var(--accent);
-      }
-      button {
+      button.primary {
         margin-top: 16px;
         width: 100%;
         border: 0;
@@ -87,57 +77,70 @@
         padding: 12px 16px;
         cursor: pointer;
       }
-      button:disabled {
-        opacity: 0.6;
-        cursor: wait;
-      }
-      .error {
-        margin-top: 12px;
-        color: #fda4af;
-        font-size: 14px;
-        min-height: 1.2em;
-      }
-      .hint {
-        margin-top: 16px;
-        font-size: 13px;
-        color: var(--muted);
-      }
+      button.primary:disabled { opacity: 0.6; cursor: wait; }
+      .error { margin-top: 12px; color: #fda4af; font-size: 14px; min-height: 1.2em; }
+      .team-fields { display: none; }
+      .team-fields.show { display: block; }
+      .hint { margin-top: 14px; font-size: 13px; color: var(--muted); }
     </style>
   </head>
   <body>
     <main class="card">
       <p class="eyebrow">EMAT Tracking Database</p>
-      <h1>Connect to your team</h1>
+      <h1>How do you want to work?</h1>
       <p>
-        Paste the Team URL from your host (the same address as the join page). You only need to do this
-        once.
+        Offline keeps a local database on this Mac. Online joins the shared team server.
+        You can sync both ways later from <strong>Help → Sync now…</strong>
       </p>
+
+      <div class="modes">
+        <button type="button" class="mode active" data-mode="offline" id="modeOffline">
+          <strong>Offline / local</strong>
+          <span>Full app on this Mac (needs Docker Desktop + project install). Works without the team network.</span>
+        </button>
+        <button type="button" class="mode" data-mode="online" id="modeOnline">
+          <strong>Online / team</strong>
+          <span>Connect to the shared team URL. Same data as everyone else while the host is reachable.</span>
+        </button>
+      </div>
+
       <form id="form">
-        <label for="url">Team URL</label>
-        <input
-          id="url"
-          name="url"
-          type="url"
-          required
-          placeholder="http://192.168.1.50:3000"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button id="submit" type="submit">Connect</button>
+        <div class="team-fields" id="teamFields">
+          <label for="url">Team URL</label>
+          <input id="url" name="url" type="url" placeholder="http://192.168.1.50:3000" autocomplete="off" spellcheck="false" />
+        </div>
+        <button class="primary" id="submit" type="submit">Continue</button>
         <div class="error" id="error"></div>
       </form>
-      <p class="hint">Tip: ask your host for the Join link — it looks like <code>http://…:3000/join</code>. Use the base URL without <code>/join</code>.</p>
+      <p class="hint">
+        Sync merges sites, assets, work orders, hours, inventory, and greentagging (not photos) using newest-change wins.
+        Use the same email/password on local and team accounts.
+      </p>
     </main>
     <script>
+      let mode = "offline";
       const form = document.getElementById("form");
+      const teamFields = document.getElementById("teamFields");
       const input = document.getElementById("url");
       const error = document.getElementById("error");
       const submit = document.getElementById("submit");
 
+      function setMode(next) {
+        mode = next;
+        document.getElementById("modeOffline").classList.toggle("active", mode === "offline");
+        document.getElementById("modeOnline").classList.toggle("active", mode === "online");
+        teamFields.classList.toggle("show", mode === "online");
+        input.required = mode === "online";
+      }
+
+      document.getElementById("modeOffline").addEventListener("click", () => setMode("offline"));
+      document.getElementById("modeOnline").addEventListener("click", () => setMode("online"));
+
       (async () => {
         try {
-          const existing = await window.ematTeam.getUrl();
-          if (existing) input.value = existing;
+          const cfg = await window.ematTeam.getConfig();
+          if (cfg?.mode) setMode(cfg.mode);
+          if (cfg?.teamUrl) input.value = cfg.teamUrl;
         } catch {
           // ignore
         }
@@ -150,9 +153,9 @@
         try {
           let url = input.value.trim().replace(/\/+$/, "");
           if (url.endsWith("/join")) url = url.slice(0, -5);
-          await window.ematTeam.saveUrl(url);
+          await window.ematTeam.saveConfig({ mode, teamUrl: url || null });
         } catch (err) {
-          error.textContent = err?.message || "Unable to save Team URL";
+          error.textContent = err?.message || "Unable to save settings";
           submit.disabled = false;
         }
       });

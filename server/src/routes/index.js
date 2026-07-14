@@ -54,6 +54,8 @@ router.get("/api", (req, res) => {
       "/api/assets",
       "/api/inventory",
       "/api/workorders",
+      "/api/sync/pull",
+      "/api/sync/push",
     ],
   });
 });

@@ -74,7 +74,7 @@ function renderJoinPage({ teamUrl, hasMacDownload }) {
       ${downloadBlock}
       <a class="btn secondary" href="/">Open in this browser</a>
     </div>
-    <p class="note">First time here? Use <strong>Request access</strong> on the login page, then wait for an admin to approve you.</p>
+    <p class="note">First time here? Use <strong>Request access</strong> on the login page, then wait for an admin to approve you. The Mac app can also work <strong>offline</strong> on your computer and <strong>Sync now</strong> with the team when you’re back online.</p>
   </main>
 </body>
 </html>`;
