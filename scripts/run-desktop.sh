@@ -26,4 +26,7 @@ if [[ ! -x "$ROOT/node_modules/.bin/electron" ]]; then
   exit 1
 fi
 
+# Cursor/IDE shells often set this; it makes Electron run as plain Node and breaks `app`.
+unset ELECTRON_RUN_AS_NODE
+
 exec "$ROOT/node_modules/.bin/electron" "$ROOT/electron/main.js"
