@@ -147,10 +147,23 @@ Guards reject any test `DATABASE_URL` that does not end in `_test` (and refuse `
 
 ## Data durability
 
-- Docker Postgres uses a **named volume** (`maintenance_platform_pgdata`) that survives normal restarts.
-- Never run `docker compose down -v` unless you intend to destroy data.
-- Never run `npm test` against the live `DATABASE_URL`.
-- Prefer `npm run db:deploy` over `db:push` on environments with real data.
+EMAT treats your database as durable production data.
+
+| Command | Purpose |
+|---------|---------|
+| `npm run db:backup` | Snapshot Postgres → `backups/emat-*.sql.gz` (keeps last ~40) |
+| `npm run db:deploy:safe` | Backup **then** apply migrations |
+| `EMAT_CONFIRM_RESTORE=YES npm run db:restore -- --latest` | Restore from newest backup |
+
+Desktop launch and `team:serve` also take a backup before schema updates when Docker is up.
+
+**Hard rules**
+
+- Docker Postgres uses named volume `maintenance_platform_pgdata` — survives normal restarts.
+- Never run `docker compose down -v` (destroys the volume).
+- Never point tests at `maintenance_platform` — use `maintenance_platform_test` only (`server/.env.test`).
+- `db:push` / interactive `db:migrate` are blocked unless `EMAT_ALLOW_DESTROY_DATA=YES` **and** the DB name ends with `_test`.
+- Prefer `npm run db:deploy:safe` over raw migrate on machines with real data.
 
 ## Docker (full app)
 

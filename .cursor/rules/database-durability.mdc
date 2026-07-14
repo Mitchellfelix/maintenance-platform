@@ -1,0 +1,27 @@
+---
+description: Protect live EMAT database from wipes, resets, and unsafe tests
+alwaysApply: true
+---
+
+# Database durability (non-negotiable)
+
+EMAT user data (sites, assets, work orders, users) must persist. Treat `maintenance_platform` as production.
+
+## Never do
+
+- Run `npm test` / Jest against `server/.env` or database `maintenance_platform`
+- Call `resetDatabase()`, `deleteMany` across core tables, `prisma migrate reset`, or `db:push` on the live DB
+- Run `docker compose down -v` or delete the `maintenance_platform_pgdata` volume
+- Fall back from `.env.test` to `.env` for test `DATABASE_URL`
+
+## Always do
+
+- Use `server/.env.test` with a `*_test` database name for integration tests
+- Prefer `npm run db:backup` and `npm run db:deploy:safe` before schema changes
+- If data must change in bulk, take a backup first and confirm the target DB name
+- After any incident, verify row counts (`site`, `asset`, `user`) before continuing
+
+## Recovery
+
+- `npm run db:backup` → writes `backups/emat-*.sql.gz`
+- `EMAT_CONFIRM_RESTORE=YES npm run db:restore -- --latest` (or a specific file)

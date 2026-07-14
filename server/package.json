@@ -13,9 +13,9 @@
     "test:coverage": "jest --runInBand --coverage",
     "test:check": "node --check index.js && node --check src/app.js",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "node ../scripts/refuse-destroy-data.js \"db:migrate (prisma migrate dev)\" && prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:push": "prisma db push",
+    "db:push": "node ../scripts/refuse-destroy-data.js \"db:push\" && prisma db push",
     "db:studio": "prisma studio"
   },
   "keywords": [

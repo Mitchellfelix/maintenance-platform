@@ -205,6 +205,11 @@ start_local_server() {
     stop_local_server
   fi
 
+  notify "Safety backup before database updates..."
+  if ! bash "$ROOT/scripts/backup-db.sh" >>"$LOG_FILE" 2>&1; then
+    echo "WARNING: Database backup failed before migrate. Continuing with migrate only." >>"$LOG_FILE"
+  fi
+
   notify "Applying database updates..."
   if ! npm run db:deploy >>"$LOG_FILE" 2>&1; then
     alert "Database migration failed. Check Docker and $LOG_FILE."

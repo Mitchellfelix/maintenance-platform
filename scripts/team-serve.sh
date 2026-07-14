@@ -22,6 +22,12 @@ if [[ ! -f server/.env ]]; then
 fi
 
 echo "Building and starting team server..."
+if bash "$ROOT/scripts/backup-db.sh"; then
+  echo "Pre-start backup OK."
+else
+  echo "WARNING: Could not back up before start (DB may be empty/first run)."
+fi
+
 docker compose --profile team up -d --build
 
 echo "Waiting for EMAT to become ready..."
@@ -68,4 +74,6 @@ echo "    npm run team:connect -- ${TEAM_URL}"
 echo ""
 echo "  Or send the Team URL for browser access."
 echo "  Logs:  docker compose logs -f app"
-  echo "  Stop:  docker compose --profile team down"
+echo "  Stop:  docker compose --profile team down"
+echo "  NEVER use: docker compose down -v  (that deletes your database volume)"
+echo "  Backup: npm run db:backup"
