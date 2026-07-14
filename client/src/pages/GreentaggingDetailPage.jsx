@@ -76,7 +76,7 @@ export default function GreentaggingDetailPage() {
         requests.push(api.get("/api/users/assignees"));
       }
       const [assignmentRes, assetsRes, assigneesRes] = await Promise.all(requests);
-      const data = assignmentRes.data;
+      let data = assignmentRes.data;
       setAssignment(data);
       setAssets(assetsRes.data);
       if (assigneesRes) setAssignees(assigneesRes.data);
@@ -88,6 +88,18 @@ export default function GreentaggingDetailPage() {
         assetId: data.assetId,
         assigneeId: data.assigneeId || "",
       });
+
+      // Older assignments may have no checklist yet — seed starter steps so photo upload is visible.
+      if (can("greentagging:write") && (!data.checklistItems || data.checklistItems.length === 0)) {
+        try {
+          const seeded = await api.post(`/api/greentagging/${id}/checklist/seed`);
+          data = seeded.data;
+          setAssignment(data);
+        } catch {
+          // Leave empty; user can click "Add starter checklist".
+        }
+      }
+
       const firstCase = data.cases?.[0];
       const nextActive =
         data.cases?.some((item) => item.id === activeCaseId) ? activeCaseId : firstCase?.id || null;
@@ -597,78 +609,91 @@ export default function GreentaggingDetailPage() {
                         </p>
                       ) : null}
 
-                      {photos.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {photos.map((photo) => (
-                            <div key={photo.id} className="group relative">
-                              <a href={photo.url} target="_blank" rel="noopener noreferrer">
-                                <img
-                                  src={photo.url}
-                                  alt={photo.originalName || "Checklist photo"}
-                                  className="h-20 w-20 rounded-xl border border-slate-600 object-cover"
-                                />
-                              </a>
-                              {writable ? (
-                                <button
-                                  type="button"
-                                  disabled={submitting}
-                                  onClick={async () => {
-                                    if (!window.confirm("Remove this photo?")) return;
-                                    setSubmitting(true);
-                                    setError("");
-                                    try {
-                                      const response = await api.delete(
-                                        `/api/greentagging/${id}/checklist/${item.id}/photos/${photo.id}`,
-                                      );
-                                      setAssignment(response.data);
-                                    } catch (err) {
-                                      setError(getErrorMessage(err, "Unable to remove photo"));
-                                    } finally {
-                                      setSubmitting(false);
-                                    }
-                                  }}
-                                  className="absolute -right-1 -top-1 rounded-full bg-slate-950/90 px-1.5 text-xs text-rose-300 ring-1 ring-rose-400/40"
-                                  aria-label="Remove photo"
-                                >
-                                  ×
-                                </button>
-                              ) : null}
-                            </div>
-                          ))}
+                      <div className="mt-3 rounded-xl border border-dashed border-slate-600 bg-slate-950/40 p-3">
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Photos {photos.length ? `(${photos.length})` : ""}
+                          </p>
+                          {writable ? (
+                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-400">
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic"
+                                className="hidden"
+                                disabled={submitting}
+                                onChange={async (event) => {
+                                  const file = event.target.files?.[0];
+                                  event.target.value = "";
+                                  if (!file) return;
+                                  setSubmitting(true);
+                                  setError("");
+                                  try {
+                                    const body = new FormData();
+                                    body.append("photo", file);
+                                    const response = await api.post(
+                                      `/api/greentagging/${id}/checklist/${item.id}/photos`,
+                                      body,
+                                    );
+                                    setAssignment(response.data);
+                                  } catch (err) {
+                                    setError(getErrorMessage(err, "Unable to upload photo"));
+                                  } finally {
+                                    setSubmitting(false);
+                                  }
+                                }}
+                              />
+                              + Add photo
+                            </label>
+                          ) : null}
                         </div>
-                      ) : null}
 
-                      {writable ? (
-                        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800">
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic"
-                            className="hidden"
-                            disabled={submitting}
-                            onChange={async (event) => {
-                              const file = event.target.files?.[0];
-                              event.target.value = "";
-                              if (!file) return;
-                              setSubmitting(true);
-                              setError("");
-                              try {
-                                const body = new FormData();
-                                body.append("photo", file);
-                                const response = await api.post(
-                                  `/api/greentagging/${id}/checklist/${item.id}/photos`,
-                                  body,
-                                );
-                                setAssignment(response.data);
-                              } catch (err) {
-                                setError(getErrorMessage(err, "Unable to upload photo"));
-                              } finally {
-                                setSubmitting(false);
-                              }
-                            }}
-                          />
-                          Add photo
-                        </label>
-                      ) : null}
+                        {photos.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {photos.map((photo) => (
+                              <div key={photo.id} className="relative">
+                                <a href={photo.url} target="_blank" rel="noopener noreferrer" title="Open full size">
+                                  <img
+                                    src={photo.url}
+                                    alt={photo.originalName || "Checklist photo"}
+                                    className="h-24 w-24 rounded-xl border border-slate-600 object-cover"
+                                  />
+                                </a>
+                                {writable ? (
+                                  <button
+                                    type="button"
+                                    disabled={submitting}
+                                    onClick={async () => {
+                                      if (!window.confirm("Remove this photo?")) return;
+                                      setSubmitting(true);
+                                      setError("");
+                                      try {
+                                        const response = await api.delete(
+                                          `/api/greentagging/${id}/checklist/${item.id}/photos/${photo.id}`,
+                                        );
+                                        setAssignment(response.data);
+                                      } catch (err) {
+                                        setError(getErrorMessage(err, "Unable to remove photo"));
+                                      } finally {
+                                        setSubmitting(false);
+                                      }
+                                    }}
+                                    className="absolute -right-1 -top-1 rounded-full bg-slate-950 px-1.5 text-xs text-rose-300 ring-1 ring-rose-400/40"
+                                    aria-label="Remove photo"
+                                  >
+                                    ×
+                                  </button>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-500">
+                            {writable
+                              ? "No photos yet — tap + Add photo to attach evidence for this step."
+                              : "No photos attached to this step."}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     {writable ? (
                       <button
