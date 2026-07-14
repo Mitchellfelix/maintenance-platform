@@ -16,6 +16,7 @@ const accessRequestRoutes = require("./routes/accessRequests");
 const inventoryRoutes = require("./routes/inventory");
 const sopRoutes = require("./routes/sops");
 const greenTagRoutes = require("./routes/greentagging");
+const checklistRoutes = require("./routes/checklists");
 const { ensureUploadDirs, UPLOAD_ROOT } = require("./lib/uploads");
 
 function createApp() {
@@ -35,6 +36,7 @@ function createApp() {
   app.use("/api/assets", assetRoutes);
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/sops", sopRoutes);
+  app.use("/api/checklists", checklistRoutes);
   app.use("/api/greentagging", greenTagRoutes);
   app.use("/api/time-entries", timeEntryRoutes);
   app.use("/api/workorders/:workOrderId/time-entries", workOrderTimeEntryRoutes);

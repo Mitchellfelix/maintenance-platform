@@ -8,6 +8,7 @@ import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import GreentagChecklistPanel from "../components/GreentagChecklistPanel.jsx";
+import StandaloneChecklistsSection from "../components/StandaloneChecklistsSection.jsx";
 import { getRoleLabel } from "../lib/permissions.js";
 import { statusLabel } from "../utils/labels.js";
 
@@ -189,8 +190,10 @@ export default function GreentaggingPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedId, setSelectedId] = useState("");
   const [boardFilter, setBoardFilter] = useState("all");
+  const [mode, setMode] = useState("jobs"); // jobs | standalone
 
   const writable = can("greentagging:write");
+  const canDelete = can("greentagging:delete");
 
   async function load() {
     setLoading(true);
@@ -341,9 +344,9 @@ export default function GreentaggingPage() {
     <div>
       <PageHeader
         title="Greentagging"
-        description="Open any job — awaiting, in progress, or complete — to edit its checklist, photos, and notes."
+        description="Job-linked checklists for field arrivals, plus standalone checklists that are not tied to any asset or job."
         action={
-          isAuthenticated && writable ? (
+          isAuthenticated && writable && mode === "jobs" ? (
             <button
               type="button"
               onClick={() => setShowCreate((open) => !open)}
@@ -357,6 +360,37 @@ export default function GreentaggingPage() {
 
       <ErrorBanner message={error} />
 
+      <div className="mb-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setMode("jobs")}
+          className={[
+            "rounded-xl px-4 py-2 text-sm font-semibold transition",
+            mode === "jobs"
+              ? "bg-orange-500 text-white"
+              : "border border-slate-600 bg-slate-900/60 text-slate-300 hover:border-slate-500",
+          ].join(" ")}
+        >
+          Jobs & assets
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("standalone")}
+          className={[
+            "rounded-xl px-4 py-2 text-sm font-semibold transition",
+            mode === "standalone"
+              ? "bg-orange-500 text-white"
+              : "border border-slate-600 bg-slate-900/60 text-slate-300 hover:border-slate-500",
+          ].join(" ")}
+        >
+          Standalone checklists
+        </button>
+      </div>
+
+      {mode === "standalone" ? (
+        <StandaloneChecklistsSection writable={writable} canDelete={canDelete} />
+      ) : (
+        <>
       <div className="mb-6 rounded-3xl border-2 border-orange-500/40 bg-orange-950/20 p-4 shadow-sm">
         <FormField
           label="Choose any job to edit (including completed)"
@@ -378,7 +412,8 @@ export default function GreentaggingPage() {
           ]}
         />
         <p className="mt-2 text-xs text-slate-400">
-          Pick from this list anytime. Checklist edits work for every status — not only active work.
+          Job checklists are linked to an asset arrival. For checklists with no job/asset, use the Standalone
+          checklists tab.
         </p>
       </div>
 
@@ -595,6 +630,8 @@ export default function GreentaggingPage() {
           />
         </div>
       ) : null}
+        </>
+      )}
     </div>
   );
 }

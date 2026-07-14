@@ -86,6 +86,9 @@ model User {
   greenTagAssignments GreenTagAssignment[] @relation("GreenTagAssignee")
   greenTagChecklistCompletions GreenTagChecklistItem[] @relation("GreenTagChecklistCompleter")
   greenTagChecklistPhotos GreenTagChecklistPhoto[] @relation("GreenTagChecklistPhotoUploader")
+  standaloneChecklists StandaloneChecklist[] @relation("StandaloneChecklistCreator")
+  standaloneChecklistCompletions StandaloneChecklistItem[] @relation("StandaloneChecklistCompleter")
+  standaloneChecklistPhotos StandaloneChecklistPhoto[] @relation("StandaloneChecklistPhotoUploader")
 }
 
 // ——— Locations & equipment ———
@@ -337,6 +340,54 @@ model GreenTagChecklistPhoto {
   uploadedById    String?
   uploadedBy      User?                 @relation("GreenTagChecklistPhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   createdAt       DateTime              @default(now())
+
+  @@index([checklistItemId])
+  @@index([uploadedById])
+}
+
+/// Standalone greentagging checklist — not tied to a job or asset.
+model StandaloneChecklist {
+  id          String   @id @default(cuid())
+  title       String
+  notes       String?
+  createdById String?
+  createdBy   User?    @relation("StandaloneChecklistCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  items       StandaloneChecklistItem[]
+
+  @@index([createdById])
+  @@index([updatedAt])
+}
+
+model StandaloneChecklistItem {
+  id            String              @id @default(cuid())
+  checklistId   String
+  checklist     StandaloneChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  label         String
+  sortOrder     Int                 @default(0)
+  completedAt   DateTime?
+  completedById String?
+  completedBy   User?               @relation("StandaloneChecklistCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  photos        StandaloneChecklistPhoto[]
+
+  @@index([checklistId])
+}
+
+model StandaloneChecklistPhoto {
+  id              String                   @id @default(cuid())
+  checklistItemId String
+  checklistItem   StandaloneChecklistItem  @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  url             String
+  filename        String
+  originalName    String
+  mimeType        String
+  sizeBytes       Int
+  uploadedById    String?
+  uploadedBy      User?                    @relation("StandaloneChecklistPhotoUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt       DateTime                 @default(now())
 
   @@index([checklistItemId])
   @@index([uploadedById])
