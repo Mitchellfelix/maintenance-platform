@@ -17,7 +17,7 @@ const inventoryRoutes = require("./routes/inventory");
 const sopRoutes = require("./routes/sops");
 const greenTagRoutes = require("./routes/greentagging");
 const checklistRoutes = require("./routes/checklists");
-const { createJoinHandler, DOWNLOADS_DIR } = require("./routes/join");
+const { createJoinHandler, createReadyZipHandler, DOWNLOADS_DIR } = require("./routes/join");
 const { ensureUploadDirs, UPLOAD_ROOT } = require("./lib/uploads");
 
 function createApp() {
@@ -28,6 +28,9 @@ function createApp() {
   app.use(express.json());
   app.use(express.static(path.join(__dirname, "..", "public")));
   app.use("/uploads", express.static(UPLOAD_ROOT));
+
+  // Preconfigured Mac download (Team URL baked in) — before static /downloads.
+  app.get("/downloads/EMAT-ready.zip", createReadyZipHandler());
   app.use("/downloads", express.static(DOWNLOADS_DIR));
 
   // Team invite page — before the SPA catch-all.

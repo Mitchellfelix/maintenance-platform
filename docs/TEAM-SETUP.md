@@ -127,15 +127,13 @@ Restart the host after editing env.
 ## Copy-paste handoff (send this to your team)
 
 ```text
-EMAT Tracking Database — join the team
+EMAT Tracking Database — download & play
 
 1. Open: http://YOUR-TEAM-URL:3000/join
-2. Prefer browser? Click “Open in this browser”.
-3. Prefer Mac app? Click “Download for Mac” → unzip → open the app → paste Team URL once.
+2. Play in browser, OR Download Mac app → unzip → open → sign in
+   (Mac download already includes your Team URL — no paste step)
 
 First login: Request access, then wait for admin approval.
-
-Daily: same Join/browser link, or open the Mac app.
 ```
 
 ---

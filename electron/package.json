@@ -27,6 +27,12 @@
       "team-setup.html",
       "sync-agent.js"
     ],
+    "extraResources": [
+      {
+        "from": "team-defaults.json",
+        "to": "team-defaults.json"
+      }
+    ],
     "mac": {
       "category": "public.app-category.business",
       "target": [

@@ -26,6 +26,30 @@ function configPath() {
   return path.join(app.getPath("userData"), "emat-config.json");
 }
 
+function readPackagedDefaults() {
+  const candidates = [
+    typeof process.resourcesPath === "string" ? path.join(process.resourcesPath, "team-defaults.json") : null,
+    path.join(__dirname, "team-defaults.json"),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    try {
+      if (!fs.existsSync(candidate)) continue;
+      const data = JSON.parse(fs.readFileSync(candidate, "utf8"));
+      const teamUrl = typeof data?.teamUrl === "string" ? data.teamUrl.trim().replace(/\/+$/, "") : "";
+      if (teamUrl && /^https?:\/\//i.test(teamUrl)) {
+        return {
+          mode: data.mode === "offline" ? "offline" : "online",
+          teamUrl,
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
 function readConfig() {
   try {
     const raw = fs.readFileSync(configPath(), "utf8");
@@ -238,6 +262,16 @@ async function bootOnline() {
 
 async function boot() {
   config = readConfig();
+
+  // First launch from a Join-page download: Team URL is already baked into the app.
+  if (!config.mode) {
+    const defaults = readPackagedDefaults();
+    if (defaults?.teamUrl) {
+      writeConfig({ mode: defaults.mode || "online", teamUrl: defaults.teamUrl });
+      config = readConfig();
+    }
+  }
+
   if (!config.mode) {
     showSetup();
     return;
