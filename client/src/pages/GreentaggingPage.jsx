@@ -345,7 +345,7 @@ export default function GreentaggingPage() {
     <div>
       <PageHeader
         title="Greentagging"
-        description="Job-linked checklists for field arrivals, plus standalone checklists that are not tied to any asset or job."
+        description="Job-linked checklists for field arrivals, plus Green Tagging Procedures that are not tied to any asset or job."
         action={
           isAuthenticated && writable && mode === "jobs" ? (
             <button
@@ -384,7 +384,7 @@ export default function GreentaggingPage() {
               : "border border-slate-600 bg-slate-900/60 text-slate-300 hover:border-slate-500",
           ].join(" ")}
         >
-          Standalone checklists
+          Green Tagging Procedures
         </button>
       </div>
 
@@ -413,8 +413,8 @@ export default function GreentaggingPage() {
           ]}
         />
         <p className="mt-2 text-xs text-slate-400">
-          Job checklists are linked to an asset arrival. For checklists with no job/asset, use the Standalone
-          checklists tab.
+          Job checklists are linked to an asset arrival. For procedures with no job/asset, use the Green
+          Tagging Procedures tab.
         </p>
       </div>
 

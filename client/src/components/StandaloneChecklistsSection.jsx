@@ -5,7 +5,7 @@ import ErrorBanner from "./ErrorBanner.jsx";
 import LoadingState from "./LoadingState.jsx";
 
 /**
- * Standalone checklists — not tied to a greentagging job or asset.
+ * Green Tagging Procedures — reusable checklists not tied to a job or asset.
  */
 export default function StandaloneChecklistsSection({ writable, canDelete }) {
   const [checklists, setChecklists] = useState([]);
@@ -36,7 +36,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
         return list[0]?.id || "";
       });
     } catch (err) {
-      setError(getErrorMessage(err, "Unable to load standalone checklists"));
+      setError(getErrorMessage(err, "Unable to load Green Tagging Procedures"));
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
         notes: notes.trim() || null,
       });
       return response.data;
-    }, "Unable to create checklist");
+    }, "Unable to create procedure");
     if (!created) return;
     setTitle("");
     setNotes("");
@@ -86,7 +86,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
     setSelectedId(created.id);
   }
 
-  if (loading) return <LoadingState label="Loading standalone checklists..." />;
+  if (loading) return <LoadingState label="Loading Green Tagging Procedures..." />;
 
   return (
     <div className="space-y-6">
@@ -96,13 +96,13 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-[16rem] flex-1">
             <FormField
-              label="Standalone checklists (no job / asset required)"
+              label="Green Tagging Procedures (no job / asset required)"
               name="standaloneSelected"
               as="select"
               value={selectedId}
               onChange={(event) => setSelectedId(event.target.value)}
               options={[
-                { value: "", label: checklists.length ? "Select a checklist…" : "No standalone checklists yet" },
+                { value: "", label: checklists.length ? "Select a procedure…" : "No Green Tagging Procedures yet" },
                 ...checklists.map((item) => {
                   const done = (item.items || []).filter((step) => step.completedAt).length;
                   const total = item.items?.length || 0;
@@ -120,12 +120,12 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
               onClick={() => setShowCreate((open) => !open)}
               className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white"
             >
-              {showCreate ? "Close" : "New checklist"}
+              {showCreate ? "Close" : "New procedure"}
             </button>
           ) : null}
         </div>
         <p className="mt-2 text-xs text-slate-400">
-          These live on their own. Use them for procedures, audits, or reusable greentagging steps that are not
+          These live on their own. Use them for greentagging procedures, audits, or reusable steps that are not
           tied to one asset arrival.
         </p>
       </div>
@@ -135,7 +135,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
           className="space-y-4 rounded-3xl border border-slate-600 bg-slate-800/90 p-6"
           onSubmit={handleCreate}
         >
-          <h3 className="text-lg font-semibold">Create standalone checklist</h3>
+          <h3 className="text-lg font-semibold">Create Green Tagging Procedure</h3>
           <FormField
             label="Title"
             name="standaloneTitle"
@@ -156,7 +156,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
             disabled={busy}
             className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
-            Create checklist
+            Create procedure
           </button>
         </form>
       ) : null}
@@ -165,8 +165,8 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
         <section className="rounded-3xl border border-dashed border-orange-500/40 bg-orange-950/10 p-8 text-center">
           <p className="text-sm text-slate-300">
             {writable
-              ? "Create a new standalone checklist, or select one above to edit."
-              : "No standalone checklist selected."}
+              ? "Create a new Green Tagging Procedure, or select one above to edit."
+              : "No Green Tagging Procedure selected."}
           </p>
         </section>
       ) : (
@@ -174,7 +174,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
           <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-300/90">
-                Standalone checklist
+                Green Tagging Procedure
               </p>
               <h3 className="mt-1 text-2xl font-bold text-slate-50">{selected.title}</h3>
               <p className="mt-2 text-sm text-slate-300">Not linked to a job or asset — edit anytime.</p>
@@ -190,18 +190,18 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
                   type="button"
                   disabled={busy}
                   onClick={async () => {
-                    if (!window.confirm("Delete this standalone checklist?")) return;
+                    if (!window.confirm("Delete this Green Tagging Procedure?")) return;
                     const ok = await run(async () => {
                       await api.delete(`/api/checklists/${selected.id}`);
                       return true;
-                    }, "Unable to delete checklist");
+                    }, "Unable to delete procedure");
                     if (!ok) return;
                     setChecklists((current) => current.filter((item) => item.id !== selected.id));
                     setSelectedId("");
                   }}
                   className="rounded-xl border border-rose-300/40 px-3 py-1.5 text-xs font-semibold text-rose-300"
                 >
-                  Delete checklist
+                  Delete procedure
                 </button>
               ) : null}
             </div>
@@ -223,7 +223,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
               }}
             >
               <FormField
-                label="Rename checklist"
+                label="Rename procedure"
                 name="standaloneRename"
                 value={selected.title}
                 onChange={(e) =>
@@ -246,7 +246,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
                 disabled={busy}
                 className="rounded-xl border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-200 disabled:opacity-60"
               >
-                Save checklist details
+                Save procedure details
               </button>
             </form>
           ) : selected.notes ? (
@@ -257,7 +257,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
 
           {items.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-orange-400/40 px-4 py-8 text-center text-sm text-slate-400">
-              No steps yet. Add checklist items below.
+              No steps yet. Add procedure items below.
             </p>
           ) : (
             <ul className="space-y-3">
@@ -471,7 +471,7 @@ export default function StandaloneChecklistsSection({ writable, canDelete }) {
             >
               <div className="min-w-[16rem] flex-1">
                 <FormField
-                  label="Add checklist item"
+                  label="Add procedure step"
                   name="newStandaloneItem"
                   value={newItemLabel}
                   onChange={(e) => setNewItemLabel(e.target.value)}
