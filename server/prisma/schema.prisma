@@ -67,6 +67,7 @@ model User {
   workOrdersRequested WorkOrder[]     @relation("WorkOrderRequester")
   workOrdersAssigned  WorkOrder[]     @relation("WorkOrderAssignee")
   workOrderNotes      WorkOrderNote[]
+  timeEntries         WorkOrderTimeEntry[]
   siteAccess          SiteAccess[]
   auditLogs           AuditLog[]      @relation("AuditActor")
   accessRequests      AccessRequest[] @relation("AccessRequestRequester")
@@ -138,7 +139,8 @@ model WorkOrder {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  notes WorkOrderNote[]
+  notes       WorkOrderNote[]
+  timeEntries WorkOrderTimeEntry[]
 
   @@index([siteId])
   @@index([assetId])
@@ -160,6 +162,24 @@ model WorkOrderNote {
 
   @@index([workOrderId])
   @@index([authorId])
+}
+
+model WorkOrderTimeEntry {
+  id          String    @id @default(cuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// Hours worked (supports quarter-hour increments).
+  hours       Float
+  workDate    DateTime  @db.Date
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workOrderId])
+  @@index([userId])
+  @@index([workDate])
 }
 
 // ——— Access control & audit ———

@@ -8,6 +8,8 @@ const authRoutes = require("./routes/auth");
 const siteRoutes = require("./routes/sites");
 const assetRoutes = require("./routes/assets");
 const workOrderRoutes = require("./routes/workorders");
+const workOrderTimeEntryRoutes = require("./routes/workOrderTimeEntries");
+const timeEntryRoutes = require("./routes/timeEntries");
 const userRoutes = require("./routes/users");
 const auditRoutes = require("./routes/audit");
 const accessRequestRoutes = require("./routes/accessRequests");
@@ -29,6 +31,8 @@ function createApp() {
   app.use("/api/assets", assetRoutes);
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/sops", sopRoutes);
+  app.use("/api/time-entries", timeEntryRoutes);
+  app.use("/api/workorders/:workOrderId/time-entries", workOrderTimeEntryRoutes);
   app.use("/api/workorders", workOrderRoutes);
   app.use(routes);
 

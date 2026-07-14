@@ -14,9 +14,9 @@ const ROLE_LABELS = {
 const ROLE_DESCRIPTIONS = {
   ADMIN: "Full access — manage users, approve access requests, and configure the platform.",
   OPS_LEAD:
-    "Ops Lead — manage sites, assets, and work orders for assigned locations; assign work to any user, approve access requests, and oversee operations.",
+    "Ops Lead — manage sites, assets, and work orders for assigned locations; assign work to any user, review hours by person and asset, approve access requests, and oversee operations.",
   OPERATOR:
-    "Operator — perform field work: update assigned work orders, assign tasks, and maintain sites and assets within assigned locations.",
+    "Operator — perform field work: update assigned work orders, log hours, assign tasks, and maintain sites and assets within assigned locations.",
   REQUESTER: "View records, create work orders, and assign them to any active user.",
 };
 
@@ -44,6 +44,8 @@ const PERMISSIONS = {
   "workorders:update": ["ADMIN", "OPS_LEAD", "OPERATOR", "REQUESTER"],
   "workorders:delete": ["ADMIN", "OPS_LEAD"],
   "workorders:assign": ROLES,
+  "time-entries:write": ["ADMIN", "OPS_LEAD", "OPERATOR"],
+  "time-entries:report": ["ADMIN", "OPS_LEAD"],
   "users:read": ["ADMIN"],
   "users:update": ["ADMIN"],
   "audit:read": ["ADMIN"],

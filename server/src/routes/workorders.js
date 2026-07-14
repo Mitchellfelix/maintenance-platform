@@ -28,7 +28,14 @@ router.get("/", optionalAuth, async (req, res, next) => {
     const siteIds = await getAccessibleSiteIds(req.user);
     const orders = await prisma.workOrder.findMany({
       where: buildSiteIdFilter(siteIds),
-      include: { asset: true, assignee: true, requester: true, site: true, notes: true },
+      include: {
+        asset: true,
+        assignee: true,
+        requester: true,
+        site: true,
+        notes: true,
+        timeEntries: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
+      },
       orderBy: { createdAt: "desc" },
     });
     res.json(orders);
@@ -42,7 +49,17 @@ router.get("/:id", optionalAuth, async (req, res, next) => {
     const siteIds = await getAccessibleSiteIds(req.user);
     const order = await prisma.workOrder.findFirst({
       where: { id: req.params.id, ...buildSiteIdFilter(siteIds) },
-      include: { asset: true, assignee: true, requester: true, site: true, notes: true },
+      include: {
+        asset: true,
+        assignee: true,
+        requester: true,
+        site: true,
+        notes: true,
+        timeEntries: {
+          include: { user: { select: { id: true, name: true, email: true, role: true } } },
+          orderBy: [{ workDate: "desc" }, { createdAt: "desc" }],
+        },
+      },
     });
     if (!order) return res.status(404).json({ error: "Work order not found" });
     res.json(order);

@@ -42,6 +42,10 @@ const PERMISSIONS = {
   "workorders:delete": ["ADMIN", "OPS_LEAD"],
   "workorders:assign": ROLES,
 
+  // Time tracking
+  "time-entries:write": ["ADMIN", "OPS_LEAD", "OPERATOR"],
+  "time-entries:report": ["ADMIN", "OPS_LEAD"],
+
   // Users (admin only)
   "users:read": ["ADMIN"],
   "users:update": ["ADMIN"],

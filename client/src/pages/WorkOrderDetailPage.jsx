@@ -8,7 +8,7 @@ import FormField from "../components/FormField.jsx";
 import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
-import { formatDate } from "../utils/labels.js";
+import { formatDate, formatDateOnly, formatHours, todayInputDate } from "../utils/labels.js";
 
 const statusOptions = [
   { value: "OPEN", label: "Open" },
@@ -45,9 +45,24 @@ export default function WorkOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [timeEntries, setTimeEntries] = useState([]);
+  const [timeForm, setTimeForm] = useState({
+    hours: "",
+    workDate: todayInputDate(),
+    note: "",
+    userId: "",
+  });
+  const [timeSubmitting, setTimeSubmitting] = useState(false);
 
   const fieldAccess = getWorkOrderFieldAccess(user?.role);
   const editable = workOrder && user && canEditWorkOrder(user, workOrder);
+  const canLogTime =
+    workOrder &&
+    user &&
+    can("time-entries:write") &&
+    (user.role === "ADMIN" || user.role === "OPS_LEAD" || workOrder.assigneeId === user.id);
+  const canLogForOthers = user?.role === "ADMIN" || user?.role === "OPS_LEAD";
+  const totalHours = timeEntries.reduce((sum, entry) => sum + Number(entry.hours || 0), 0);
 
   async function loadWorkOrder() {
     setLoading(true);
@@ -58,12 +73,13 @@ export default function WorkOrderDetailPage() {
         api.get("/api/sites"),
         api.get("/api/assets"),
       ];
-      if (can("workorders:assign")) {
+      if (can("workorders:assign") || can("time-entries:write")) {
         requests.push(api.get("/api/users/assignees"));
       }
 
       const [orderResponse, sitesResponse, assetsResponse, assigneesResponse] = await Promise.all(requests);
       setWorkOrder(orderResponse.data);
+      setTimeEntries(orderResponse.data.timeEntries || []);
       setSites(sitesResponse.data);
       setAssets(assetsResponse.data);
       if (assigneesResponse) {
@@ -78,6 +94,11 @@ export default function WorkOrderDetailPage() {
         assetId: orderResponse.data.assetId || "",
         assigneeId: orderResponse.data.assigneeId || "",
       });
+      setTimeForm((current) => ({
+        ...current,
+        workDate: current.workDate || todayInputDate(),
+        userId: user?.id || "",
+      }));
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load work order"));
     } finally {
@@ -138,6 +159,53 @@ export default function WorkOrderDetailPage() {
     } catch (err) {
       setError(getErrorMessage(err, "Unable to delete work order"));
       setSubmitting(false);
+    }
+  }
+
+  function updateTimeField(event) {
+    const { name, value } = event.target;
+    setTimeForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function handleLogHours(event) {
+    event.preventDefault();
+    setTimeSubmitting(true);
+    setError("");
+    try {
+      const payload = {
+        hours: Number(timeForm.hours),
+        workDate: timeForm.workDate,
+        note: timeForm.note || null,
+      };
+      if (canLogForOthers && timeForm.userId) {
+        payload.userId = timeForm.userId;
+      }
+      const response = await api.post(`/api/workorders/${id}/time-entries`, payload);
+      setTimeEntries((current) => [response.data, ...current]);
+      setTimeForm((current) => ({
+        ...current,
+        hours: "",
+        note: "",
+        workDate: todayInputDate(),
+      }));
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to log hours"));
+    } finally {
+      setTimeSubmitting(false);
+    }
+  }
+
+  async function handleDeleteTimeEntry(entryId) {
+    if (!window.confirm("Delete this time entry?")) return;
+    setTimeSubmitting(true);
+    setError("");
+    try {
+      await api.delete(`/api/workorders/${id}/time-entries/${entryId}`);
+      setTimeEntries((current) => current.filter((entry) => entry.id !== entryId));
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to delete time entry"));
+    } finally {
+      setTimeSubmitting(false);
     }
   }
 
@@ -299,6 +367,133 @@ export default function WorkOrderDetailPage() {
           </section>
         )}
       </div>
+
+      <section className="mt-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">Hours logged</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Total {formatHours(totalHours)} hour{totalHours === 1 ? "" : "s"} on this work order
+              {workOrder.asset?.name ? ` · ${workOrder.asset.name}` : ""}
+            </p>
+          </div>
+          {can("time-entries:report") ? (
+            <Link to="/reports/hours" className="text-sm font-medium text-orange-300 hover:underline">
+              View hours report
+            </Link>
+          ) : null}
+        </div>
+
+        {canLogTime ? (
+          <form className="mt-4 grid gap-4 border-t border-slate-700 pt-4 md:grid-cols-4" onSubmit={handleLogHours}>
+            <FormField
+              label="Hours"
+              name="hours"
+              type="number"
+              value={timeForm.hours}
+              onChange={updateTimeField}
+              required
+              placeholder="e.g. 1.5"
+            />
+            <FormField
+              label="Work date"
+              name="workDate"
+              type="date"
+              value={timeForm.workDate}
+              onChange={updateTimeField}
+              required
+            />
+            {canLogForOthers ? (
+              <FormField
+                label="Person"
+                name="userId"
+                as="select"
+                value={timeForm.userId || user?.id || ""}
+                onChange={updateTimeField}
+                options={assignees.map((person) => ({
+                  value: person.id,
+                  label: person.name || person.email,
+                }))}
+              />
+            ) : null}
+            <FormField
+              label="Note"
+              name="note"
+              value={timeForm.note}
+              onChange={updateTimeField}
+              placeholder="Optional"
+            />
+            <div className={`flex items-end ${canLogForOthers ? "md:col-span-4" : "md:col-span-1"}`}>
+              <button
+                type="submit"
+                disabled={timeSubmitting}
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Log hours
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="mt-4 text-sm text-slate-400">
+            {can("time-entries:write")
+              ? "Assign this work order to yourself to log hours."
+              : "Only operators and ops leads can log hours."}
+          </p>
+        )}
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-700">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-700/70 text-xs uppercase tracking-wide text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Person</th>
+                <th className="px-4 py-3 text-right">Hours</th>
+                <th className="px-4 py-3">Note</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {timeEntries.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                    No hours logged yet.
+                  </td>
+                </tr>
+              ) : (
+                timeEntries.map((entry) => {
+                  const canManage =
+                    user &&
+                    (user.role === "ADMIN" ||
+                      user.role === "OPS_LEAD" ||
+                      (entry.userId === user.id && canLogTime));
+                  return (
+                    <tr key={entry.id} className="border-t border-slate-700">
+                      <td className="whitespace-nowrap px-4 py-3 text-slate-300">
+                        {formatDateOnly(entry.workDate)}
+                      </td>
+                      <td className="px-4 py-3">{entry.user?.name || entry.user?.email}</td>
+                      <td className="px-4 py-3 text-right font-medium">{formatHours(entry.hours)}</td>
+                      <td className="px-4 py-3 text-slate-400">{entry.note || "—"}</td>
+                      <td className="px-4 py-3 text-right">
+                        {canManage ? (
+                          <button
+                            type="button"
+                            disabled={timeSubmitting}
+                            onClick={() => handleDeleteTimeEntry(entry.id)}
+                            className="text-sm text-rose-300 hover:underline disabled:opacity-60"
+                          >
+                            Delete
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

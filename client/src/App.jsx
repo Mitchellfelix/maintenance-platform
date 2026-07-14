@@ -22,6 +22,7 @@ import SopDetailPage from "./pages/SopDetailPage.jsx";
 import InviteAcceptPage from "./pages/InviteAcceptPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
+import HoursReportPage from "./pages/HoursReportPage.jsx";
 
 export default function App() {
   return (
@@ -52,6 +53,14 @@ export default function App() {
             <Route path="/sops" element={<SopsPage />} />
             <Route path="/sops/:id" element={<SopDetailPage />} />
             <Route path="/access/request" element={<AccessRequestPage />} />
+            <Route
+              path="/reports/hours"
+              element={
+                <PermissionRoute permission="time-entries:report">
+                  <HoursReportPage />
+                </PermissionRoute>
+              }
+            />
             <Route
               path="/admin/users"
               element={

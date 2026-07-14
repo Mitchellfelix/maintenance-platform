@@ -22,6 +22,8 @@ const accessRequestsRead = [auth, requirePermission("access-requests:read")];
 const accessRequestsReview = [auth, requirePermission("access-requests:review")];
 const sopsWrite = [auth, requirePermission("sops:write")];
 const sopsDelete = [auth, requirePermission("sops:delete")];
+const timeEntriesWrite = [auth, requirePermission("time-entries:write")];
+const timeEntriesReport = [auth, requirePermission("time-entries:report")];
 
 module.exports = {
   anyAuth,
@@ -42,4 +44,6 @@ module.exports = {
   accessRequestsReview,
   sopsWrite,
   sopsDelete,
+  timeEntriesWrite,
+  timeEntriesReport,
 };
