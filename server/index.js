@@ -3,6 +3,7 @@ const prisma = require("./src/lib/prisma");
 const { validateEnv, verifyDatabaseConnection } = require("./src/lib/startup");
 
 const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || "0.0.0.0";
 const app = createApp();
 
 let server;
@@ -11,8 +12,8 @@ async function start() {
   validateEnv();
   await verifyDatabaseConnection();
 
-  server = app.listen(PORT, () => {
-    console.log(`EMAT Tracking Database running on http://localhost:${PORT}`);
+  server = app.listen(PORT, HOST, () => {
+    console.log(`EMAT Tracking Database running on http://${HOST}:${PORT}`);
   });
 }
 

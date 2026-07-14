@@ -126,21 +126,25 @@ Restart the host after editing env.
 
 ## Host: keep the team server always on
 
-`npm start` stops when that Terminal/process exits. For a durable host:
+Don’t leave `npm start` in a random Terminal — it dies when that process exits.
 
-1. **Use Docker team mode** (auto-restarts containers):
-   ```bash
-   npm run team:serve
-   ```
-2. **Start at login** (macOS LaunchAgent checks every 2 minutes):
-   ```bash
-   npm run team:autostart
-   ```
-3. **Docker Desktop** → Settings → General → enable *Start Docker Desktop when you sign in*.
-4. **Energy settings** → prevent sleep while plugged in (sleep can still block teammates on Wi‑Fi).
+```bash
+npm run team:autostart   # KeepAlive LaunchAgent — restarts if the API crashes
+```
 
-Remove autostart: `npm run team:autostart:off`  
-Logs: `~/Library/Logs/EMAT/`
+Then once:
+
+1. **Docker Desktop** → start at login (Postgres).
+2. **Energy** → prevent sleep while plugged in.
+3. **Firewall** (important on managed Macs): System Settings → Network → Firewall → Options  
+   → turn **OFF** “Enable stealth mode”  
+   → allow **Node** incoming if asked.
+
+Share: `http://YOUR-LAN-IP:3000/join`  
+Logs: `~/Library/Logs/EMAT/team-server.log`  
+Stop: `npm run team:autostart:off`
+
+If teammates still time out while **you** can open the Join link on this Mac: company Wi‑Fi may block device-to-device traffic (client isolation). Ask IT, use a personal hotspot temporarily, or have them use a machine that can reach your IP.
 
 ---
 

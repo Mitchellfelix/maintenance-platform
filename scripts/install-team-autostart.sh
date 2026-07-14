@@ -1,15 +1,22 @@
 #!/bin/bash
-# Install a macOS LaunchAgent so the EMAT team server starts at login and is re-checked every 2 minutes.
+# Install a KeepAlive LaunchAgent so EMAT stays online (restarts if the process dies).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LABEL="com.emat.team-server"
 PLIST="${HOME}/Library/LaunchAgents/${LABEL}.plist"
-KEEP_ALIVE="$ROOT/scripts/team-keep-alive.sh"
+RUNNER="$ROOT/scripts/team-server-run.sh"
 LOG_DIR="${HOME}/Library/Logs/EMAT"
+NODE_BIN="${HOME}/.nvm/versions/node/v22.22.3/bin/node"
 
-chmod +x "$KEEP_ALIVE"
+chmod +x "$RUNNER" "$ROOT/scripts/team-keep-alive.sh" 2>/dev/null || true
 mkdir -p "${HOME}/Library/LaunchAgents" "$LOG_DIR"
+
+# Allow Node through the macOS application firewall (needs privileges sometimes).
+if [[ -x "$NODE_BIN" ]]; then
+  /usr/libexec/ApplicationFirewall/socketfilterfw --add "$NODE_BIN" 2>/dev/null || true
+  /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp "$NODE_BIN" 2>/dev/null || true
+fi
 
 cat >"$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -21,12 +28,14 @@ cat >"$PLIST" <<EOF
     <key>ProgramArguments</key>
     <array>
       <string>/bin/bash</string>
-      <string>${KEEP_ALIVE}</string>
+      <string>${RUNNER}</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
-    <key>StartInterval</key>
-    <integer>120</integer>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
     <key>WorkingDirectory</key>
     <string>${ROOT}</string>
     <key>EnvironmentVariables</key>
@@ -35,6 +44,8 @@ cat >"$PLIST" <<EOF
       <string>${HOME}/.nvm/versions/node/v22.22.3/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
       <key>EMAT_PORT</key>
       <string>3000</string>
+      <key>HOST</key>
+      <string>0.0.0.0</string>
     </dict>
     <key>StandardOutPath</key>
     <string>${LOG_DIR}/launchagent.out.log</string>
@@ -45,21 +56,35 @@ cat >"$PLIST" <<EOF
 EOF
 
 launchctl bootout "gui/$(id -u)/${LABEL}" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$PLIST"
+# Stop any manual npm/node on 3000 so KeepAlive owns the port.
+if lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then
+  lsof -tiTCP:3000 -sTCP:LISTEN 2>/dev/null | while read -r pid; do
+    kill "$pid" 2>/dev/null || true
+  done || true
+  sleep 1
+fi
+
+if ! launchctl bootstrap "gui/$(id -u)" "$PLIST" 2>/tmp/emat-launchctl-bootstrap.err; then
+  echo "launchctl bootstrap failed:"
+  cat /tmp/emat-launchctl-bootstrap.err 2>/dev/null || true
+  # Last resort: load via legacy API
+  launchctl load -w "$PLIST" 2>/dev/null || true
+fi
 launchctl enable "gui/$(id -u)/${LABEL}" 2>/dev/null || true
 launchctl kickstart -k "gui/$(id -u)/${LABEL}" 2>/dev/null || launchctl start "$LABEL" 2>/dev/null || true
 
 echo ""
-echo "Installed: $PLIST"
-echo "EMAT team server will start at login and re-check every 2 minutes."
+echo "Installed KeepAlive agent: $PLIST"
+echo "EMAT will stay running and auto-restart if it crashes."
 echo ""
-echo "Also do this once (important):"
-echo "  1. Open Docker Desktop → Settings → General"
-echo "     → enable “Start Docker Desktop when you sign in”"
-echo "  2. System Settings → Energy (or Battery) → prevent sleep while plugged in"
-echo "     (sleep can still drop Wi‑Fi for teammates even if Docker restarts later)"
+echo "Do these once so teammates can reach you:"
+echo "  1. System Settings → Network → Firewall → Options"
+echo "     → turn OFF “Enable stealth mode” (stealth makes LAN connects time out)"
+echo "     → allow incoming for Node if prompted"
+echo "  2. Docker Desktop → start at login (needed for the database)"
+echo "  3. Energy → prevent sleep while plugged in"
 echo ""
-echo "Start now:  npm run team:serve"
-echo "Logs:       ~/Library/Logs/EMAT/"
-echo "Remove:     npm run team:autostart:off"
+echo "Share:  http://$(ipconfig getifaddr en0 2>/dev/null || echo YOUR-IP):3000/join"
+echo "Logs:   $LOG_DIR/team-server.log"
+echo "Stop:   npm run team:autostart:off"
 echo ""
