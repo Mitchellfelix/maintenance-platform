@@ -282,6 +282,8 @@ model GreenTagAssignment {
   id          String         @id @default(cuid())
   title       String
   summary     String?
+  /// Overall how-to for the whole greentagging effort (separate from per-case directions).
+  instructions String?
   status      GreenTagStatus @default(OPEN)
 
   assetId String

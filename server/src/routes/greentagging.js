@@ -113,6 +113,7 @@ router.post("/", ...greentaggingWrite, validate(createGreenTagAssignmentSchema),
       data: {
         title: req.validated.title,
         summary: req.validated.summary || null,
+        instructions: req.validated.instructions || null,
         assetId: req.validated.assetId,
         assigneeId: req.validated.assigneeId || null,
         status,

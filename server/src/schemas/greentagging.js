@@ -12,6 +12,7 @@ const caseInputSchema = z.object({
 const createGreenTagAssignmentSchema = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().optional().nullable(),
+  instructions: z.string().trim().optional().nullable(),
   assetId: z.string().min(1),
   assigneeId: z.string().min(1).optional().nullable(),
   status: greenTagStatusSchema.optional(),
@@ -24,6 +25,7 @@ const updateGreenTagAssignmentSchema = z
   .object({
     title: z.string().trim().min(1).optional(),
     summary: z.string().trim().nullable().optional(),
+    instructions: z.string().trim().nullable().optional(),
     assetId: z.string().min(1).optional(),
     assigneeId: z.string().min(1).nullable().optional(),
     status: greenTagStatusSchema.optional(),

@@ -51,6 +51,7 @@ export default function GreentaggingDetailPage() {
   const [assignmentForm, setAssignmentForm] = useState({
     title: "",
     summary: "",
+    instructions: "",
     status: "OPEN",
     assetId: "",
     assigneeId: "",
@@ -81,6 +82,7 @@ export default function GreentaggingDetailPage() {
       setAssignmentForm({
         title: data.title,
         summary: data.summary || "",
+        instructions: data.instructions || "",
         status: data.status,
         assetId: data.assetId,
         assigneeId: data.assigneeId || "",
@@ -129,6 +131,7 @@ export default function GreentaggingDetailPage() {
       const response = await api.patch(`/api/greentagging/${id}`, {
         title: assignmentForm.title.trim(),
         summary: assignmentForm.summary.trim() || null,
+        instructions: assignmentForm.instructions.trim() || null,
         status: assignmentForm.status,
         assetId: assignmentForm.assetId,
         assigneeId: assignmentForm.assigneeId || null,
@@ -431,7 +434,7 @@ export default function GreentaggingDetailPage() {
               ]}
             />
             <FormField
-              label="Summary"
+              label="Notes from field"
               name="summary"
               as="textarea"
               value={assignmentForm.summary}
@@ -463,6 +466,60 @@ export default function GreentaggingDetailPage() {
           </section>
         )}
       </div>
+
+      <section className="mb-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Overall instructions</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            How-to for the whole greentagging effort. Case tabs below still have their own step directions.
+          </p>
+        </div>
+
+        {writable ? (
+          <form
+            className="space-y-4"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setSubmitting(true);
+              setError("");
+              try {
+                const response = await api.patch(`/api/greentagging/${id}`, {
+                  instructions: assignmentForm.instructions.trim() || null,
+                });
+                setAssignment(response.data);
+              } catch (err) {
+                setError(getErrorMessage(err, "Unable to save overall instructions"));
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            <FormField
+              label="Instructions"
+              name="instructions"
+              as="textarea"
+              value={assignmentForm.instructions}
+              onChange={(e) => setAssignmentForm((c) => ({ ...c, instructions: e.target.value }))}
+              placeholder="e.g. Safety requirements, PPE, where tags are stored, who to notify when complete…"
+            />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Save overall instructions
+            </button>
+          </form>
+        ) : assignment.instructions ? (
+          <pre className="whitespace-pre-wrap rounded-2xl border border-slate-700 bg-slate-900/70 p-4 text-sm leading-relaxed text-slate-100">
+            {assignment.instructions}
+          </pre>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-slate-600 p-4 text-sm text-slate-400">
+            No overall instructions yet.
+          </p>
+        )}
+      </section>
 
       <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
         <div className="mb-4">

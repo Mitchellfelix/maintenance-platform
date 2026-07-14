@@ -19,6 +19,7 @@ function greenTagStatusLabel(status) {
 const emptyForm = {
   title: "",
   summary: "",
+  instructions: "",
   assetId: "",
   assigneeId: "",
 };
@@ -222,6 +223,7 @@ export default function GreentaggingPage() {
       await api.post("/api/greentagging", {
         title: form.title.trim(),
         summary: form.summary.trim() || null,
+        instructions: form.instructions.trim() || null,
         assetId: form.assetId,
         assigneeId: form.assigneeId || null,
         status: "OPEN",
@@ -370,6 +372,14 @@ export default function GreentaggingPage() {
               value={form.summary}
               onChange={updateField}
               placeholder="Optional context for the greentagging team"
+            />
+            <FormField
+              label="Overall instructions"
+              name="instructions"
+              as="textarea"
+              value={form.instructions}
+              onChange={updateField}
+              placeholder="Optional how-to for the whole effort (safety, PPE, notify who, etc.)"
             />
           </div>
           <button
