@@ -23,11 +23,35 @@ function escapeShellSingle(value) {
   return String(value).replace(/'/g, `'\\''`);
 }
 
+function configuredAppUrl() {
+  return String(process.env.EMAT_APP_URL || process.env.APP_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
+/**
+ * Public URL for Join / install / ready zip.
+ * Prefer configured APP_URL so Host / X-Forwarded-Host cannot poison Team URL.
+ */
 function detectPublicOrigin(req) {
-  const host = req.get("x-forwarded-host") || req.get("host") || "localhost:3000";
-  const proto = req.get("x-forwarded-proto") || req.protocol || "http";
+  const configured = configuredAppUrl();
+  if (configured) return configured;
+
+  if (process.env.NODE_ENV === "production") {
+    console.warn(
+      "[join] EMAT_APP_URL/APP_URL unset — refusing Host-header origin in production",
+    );
+    return "";
+  }
+
+  const host = req.get("host") || "localhost:3000";
+  const proto = req.protocol || "http";
   return `${proto}://${host}`.replace(/\/$/, "");
 }
+
+/** Cache ready zips per team URL (invalidated when base Mac zip mtime changes). */
+const readyZipCache = new Map();
+let readyZipInflight = null;
 
 function baseZipPath() {
   return path.join(DOWNLOADS_DIR, MAC_ZIP);
@@ -279,9 +303,48 @@ function renderJoinPage({ teamUrl, macReady }) {
 </html>`;
 }
 
+function buildReadyZipCached(teamUrl) {
+  if (!teamUrl) {
+    throw Object.assign(new Error("APP_URL is not configured"), { status: 503 });
+  }
+  const baseZip = baseZipPath();
+  const baseMtime = fs.statSync(baseZip).mtimeMs;
+  const cached = readyZipCache.get(teamUrl);
+  if (cached && cached.baseMtime === baseMtime) {
+    return cached.buffer;
+  }
+
+  if (readyZipInflight) {
+    return readyZipInflight.then(() => {
+      const again = readyZipCache.get(teamUrl);
+      if (again && again.baseMtime === baseMtime) return again.buffer;
+      return buildReadyZipCached(teamUrl);
+    });
+  }
+
+  readyZipInflight = Promise.resolve()
+    .then(() => {
+      const buffer = buildReadyZipFile(teamUrl);
+      readyZipCache.clear();
+      readyZipCache.set(teamUrl, { baseMtime, buffer });
+      return buffer;
+    })
+    .finally(() => {
+      readyZipInflight = null;
+    });
+
+  return readyZipInflight;
+}
+
 function createJoinHandler() {
   return (req, res) => {
     const teamUrl = detectPublicOrigin(req);
+    if (!teamUrl) {
+      return res
+        .status(503)
+        .type("text/plain")
+        .send("EMAT_APP_URL (or APP_URL) must be set on the server.");
+    }
     res.type("html").send(renderJoinPage({ teamUrl, macReady: hasMacDownload() }));
   };
 }
@@ -295,6 +358,12 @@ function createInstallMacHandler() {
       return;
     }
     const teamUrl = detectPublicOrigin(req);
+    if (!teamUrl) {
+      return res
+        .status(503)
+        .type("text/plain")
+        .send("# EMAT_APP_URL (or APP_URL) must be set on the server.\n");
+    }
     res
       .status(200)
       .type("text/plain; charset=utf-8")
@@ -305,7 +374,7 @@ function createInstallMacHandler() {
 }
 
 function createReadyZipHandler() {
-  return (req, res) => {
+  return async (req, res) => {
     if (!hasMacDownload()) {
       return res.status(404).json({
         error: "Mac app not packaged yet. Host should run: npm run package:team-client",
@@ -313,14 +382,15 @@ function createReadyZipHandler() {
     }
     try {
       const teamUrl = detectPublicOrigin(req);
-      const buffer = buildReadyZipFile(teamUrl);
+      const buffer = await buildReadyZipCached(teamUrl);
       res.setHeader("Content-Type", "application/zip");
       res.setHeader("Content-Disposition", `attachment; filename="${READY_NAME}"`);
       res.setHeader("Content-Length", buffer.length);
       res.send(buffer);
     } catch (error) {
       console.error("EMAT ready zip failed:", error);
-      res.status(500).json({ error: "Unable to build download" });
+      const status = error.status || 500;
+      res.status(status).json({ error: error.message || "Unable to build download" });
     }
   };
 }

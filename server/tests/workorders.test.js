@@ -44,17 +44,21 @@ describeIfDb("work order routes", () => {
       .set(authHeader(token))
       .send({ title: "Fix pump", siteId });
 
-    const listResponse = await request(app).get("/api/workorders");
+    const listResponse = await request(app).get("/api/workorders").set(authHeader(token));
     expect(listResponse.status).toBe(200);
     expect(listResponse.body).toHaveLength(1);
 
-    const detailResponse = await request(app).get(`/api/workorders/${createResponse.body.id}`);
+    const detailResponse = await request(app)
+      .get(`/api/workorders/${createResponse.body.id}`)
+      .set(authHeader(token));
     expect(detailResponse.status).toBe(200);
     expect(detailResponse.body.title).toBe("Fix pump");
   });
 
   it("returns 404 for a missing work order", async () => {
-    const response = await request(app).get("/api/workorders/nonexistent-id");
+    const response = await request(app)
+      .get("/api/workorders/nonexistent-id")
+      .set(authHeader(token));
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("Work order not found");
   });
@@ -103,7 +107,9 @@ describeIfDb("work order routes", () => {
 
     expect(deleteResponse.status).toBe(204);
 
-    const getResponse = await request(app).get(`/api/workorders/${createResponse.body.id}`);
+    const getResponse = await request(app)
+      .get(`/api/workorders/${createResponse.body.id}`)
+      .set(authHeader(token));
     expect(getResponse.status).toBe(404);
   });
 

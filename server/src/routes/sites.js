@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { sitesWrite, sitesDelete } = require("../middleware/routeGuards");
+const { sitesWrite, sitesDelete, sitesRead } = require("../middleware/routeGuards");
 const { createSiteSchema, updateSiteSchema } = require("../schemas/site");
 const { recordAudit } = require("../services/auditService");
 const { isSiteScopedRole } = require("../lib/permissions");
@@ -14,7 +13,7 @@ const {
 
 const router = express.Router();
 
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...sitesRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const sites = await prisma.site.findMany({
@@ -28,7 +27,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...sitesRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const site = await prisma.site.findFirst({

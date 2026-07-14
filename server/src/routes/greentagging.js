@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { greentaggingWrite, greentaggingDelete } = require("../middleware/routeGuards");
+const { greentaggingWrite, greentaggingDelete, greentaggingRead } = require("../middleware/routeGuards");
 const {
   createGreenTagAssignmentSchema,
   updateGreenTagAssignmentSchema,
@@ -88,7 +87,7 @@ function normalizeCases(cases) {
   }));
 }
 
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...greentaggingRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const { assetId, status } = req.query;
@@ -109,7 +108,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...greentaggingRead, async (req, res, next) => {
   try {
     const assignment = await getAssignmentForUser(req.params.id, req.user);
     if (!assignment) return res.status(404).json({ error: "Greentagging assignment not found" });

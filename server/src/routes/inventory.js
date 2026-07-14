@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { inventoryWrite, inventoryDelete } = require("../middleware/routeGuards");
+const { inventoryWrite, inventoryDelete, inventoryRead } = require("../middleware/routeGuards");
 const { createInventoryPartSchema, updateInventoryPartSchema } = require("../schemas/inventory");
 const { recordAudit } = require("../services/auditService");
 const {
@@ -42,7 +41,7 @@ async function getInventoryPartForUser(id, user) {
   });
 }
 
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...inventoryRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const { assetId } = req.query;
@@ -62,7 +61,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...inventoryRead, async (req, res, next) => {
   try {
     const part = await getInventoryPartForUser(req.params.id, req.user);
     if (!part) return res.status(404).json({ error: "Inventory part not found" });

@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { greentaggingWrite, greentaggingDelete } = require("../middleware/routeGuards");
+const { greentaggingWrite, greentaggingDelete, checklistsRead } = require("../middleware/routeGuards");
 const {
   createStandaloneChecklistSchema,
   updateStandaloneChecklistSchema,
@@ -37,7 +36,7 @@ async function getChecklist(id) {
   });
 }
 
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...checklistsRead, async (req, res, next) => {
   try {
     const checklists = await prisma.standaloneChecklist.findMany({
       include: checklistInclude,
@@ -49,7 +48,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...checklistsRead, async (req, res, next) => {
   try {
     const checklist = await getChecklist(req.params.id);
     if (!checklist) return res.status(404).json({ error: "Checklist not found" });

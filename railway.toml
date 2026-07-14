@@ -17,7 +17,7 @@ restartPolicyMaxRetries = 10
 #   JWT_SECRET          — strong random secret
 #   EMAT_APP_URL        — https://YOUR-APP.up.railway.app
 #   APP_URL             — same as EMAT_APP_URL
-#   CORS_ORIGIN         — true   (or your public origin)
+#   CORS_ORIGIN         — same as EMAT_APP_URL (allowlist; not "true")
 #   EMAT_DATA_DIR       — /data  (when volume is mounted at /data)
 #   HOST                — 0.0.0.0
 # DATABASE_URL is injected by the Postgres plugin.

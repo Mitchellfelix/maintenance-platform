@@ -1,8 +1,8 @@
-const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const prisma = require("../lib/prisma");
 const { recordAudit } = require("./auditService");
 const { sendMailTo, mailConfigured, appBaseUrl } = require("./notifyService");
+const { hashToken, generateToken } = require("../lib/tokens");
 
 const SALT_ROUNDS = 10;
 const RESET_TTL_MS = 30 * 60 * 1000;
@@ -17,10 +17,6 @@ const requestTimestampsByKey = new Map();
 
 function authHelpers() {
   return require("./authService");
-}
-
-function generateToken() {
-  return crypto.randomBytes(32).toString("hex");
 }
 
 function rateLimitKey(email, ip) {
@@ -71,7 +67,7 @@ async function requestPasswordReset({ email, ip }) {
   await prisma.passwordReset.create({
     data: {
       userId: user.id,
-      token,
+      token: hashToken(token),
       expiresAt,
     },
   });
@@ -113,12 +109,16 @@ async function requestPasswordReset({ email, ip }) {
     },
   });
 
+  // Expose raw token only under Jest so tests can exercise the hashed-token flow.
+  if (process.env.NODE_ENV === "test") {
+    return { message: GENERIC_MESSAGE, token };
+  }
   return { message: GENERIC_MESSAGE };
 }
 
 async function getPasswordResetByToken(token) {
   const reset = await prisma.passwordReset.findUnique({
-    where: { token },
+    where: { token: hashToken(token) },
     include: { user: { select: { id: true, email: true, status: true } } },
   });
 
@@ -137,7 +137,7 @@ async function getPasswordResetByToken(token) {
 
 async function completePasswordReset(token, { password }) {
   const reset = await prisma.passwordReset.findUnique({
-    where: { token },
+    where: { token: hashToken(token) },
     include: { user: true },
   });
 

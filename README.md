@@ -130,8 +130,8 @@ Open **http://localhost:3000**. Express serves the compiled app plus `/api/*` ro
 - `GET /api/auth/me` (Bearer token required)
 
 ### Sites
-- `GET /api/sites`
-- `GET /api/sites/:id`
+- `GET /api/sites` (auth required)
+- `GET /api/sites/:id` (auth required)
 - `POST /api/sites` (auth required)
 - `PATCH /api/sites/:id` (auth required)
 - `DELETE /api/sites/:id` (auth required)
@@ -139,13 +139,15 @@ Open **http://localhost:3000**. Express serves the compiled app plus `/api/*` ro
 ### Assets
 - `GET /api/assets`
 - `GET /api/assets/:id`
+- `GET /api/assets` (auth required)
+- `GET /api/assets/:id` (auth required)
 - `POST /api/assets` (auth required)
 - `PATCH /api/assets/:id` (auth required)
 - `DELETE /api/assets/:id` (auth required)
 
 ### Work orders
-- `GET /api/workorders`
-- `GET /api/workorders/:id`
+- `GET /api/workorders` (auth required)
+- `GET /api/workorders/:id` (auth required)
 - `POST /api/workorders` (auth required; `code` and `requesterId` set server-side)
 - `PATCH /api/workorders/:id` (auth required)
 - `DELETE /api/workorders/:id` (auth required)

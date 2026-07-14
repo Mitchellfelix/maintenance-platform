@@ -3,8 +3,18 @@ const { isSiteScopedRole } = require("../lib/permissions");
 
 const NO_ACCESS_PLACEHOLDER = "__no_site_access__";
 
+/**
+ * @returns {Promise<string[]|null>}
+ *   null  — unrestricted (ADMIN only)
+ *   []    — authenticated but no sites (or unauthenticated) → empty results
+ *   ids   — site-scoped list
+ */
 async function getAccessibleSiteIds(user) {
-  if (!user || user.role === "ADMIN") {
+  if (!user) {
+    return [];
+  }
+
+  if (user.role === "ADMIN") {
     return null;
   }
 
@@ -16,6 +26,7 @@ async function getAccessibleSiteIds(user) {
     return rows.map((row) => row.siteId);
   }
 
+  // REQUESTER and other non-scoped authenticated roles: full site list (product reads).
   return null;
 }
 
@@ -40,13 +51,20 @@ function buildSiteRecordFilter(siteIds) {
 }
 
 async function assertSiteAccess(user, siteId) {
-  if (!user || user.role === "ADMIN") {
+  if (!user) {
+    throw Object.assign(new Error("Unauthorized"), {
+      status: 401,
+      message: "Authentication required",
+    });
+  }
+
+  if (user.role === "ADMIN") {
     return;
   }
 
   if (isSiteScopedRole(user.role)) {
     const siteIds = await getAccessibleSiteIds(user);
-    if (!siteIds.includes(siteId)) {
+    if (!siteIds || !siteIds.includes(siteId)) {
       throw Object.assign(new Error("Forbidden"), {
         status: 403,
         message: "You do not have access to this site",

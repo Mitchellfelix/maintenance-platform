@@ -38,7 +38,7 @@
       "target": [
         {
           "target": "zip",
-          "arch": ["arm64"]
+          "arch": ["universal"]
         }
       ],
       "identity": null,

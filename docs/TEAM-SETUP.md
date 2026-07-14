@@ -17,7 +17,7 @@ Primary guide: **[RAILWAY.md](./RAILWAY.md)**.
 npm install -g @railway/cli
 railway login
 railway link          # after creating the project + Postgres in the dashboard
-# Set JWT_SECRET, EMAT_APP_URL, CORS_ORIGIN=true, EMAT_DATA_DIR=/data
+# Set JWT_SECRET, EMAT_APP_URL, CORS_ORIGIN=$EMAT_APP_URL, EMAT_DATA_DIR=/data
 # Mount volume at /data — see RAILWAY.md
 
 railway up

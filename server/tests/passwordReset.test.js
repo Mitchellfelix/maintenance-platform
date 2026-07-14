@@ -7,6 +7,7 @@ const {
   setupDbHooks,
 } = require("./helpers");
 const { GENERIC_MESSAGE } = require("../src/services/passwordResetService");
+const { hashToken } = require("../src/lib/tokens");
 
 describeIfDb("password reset", () => {
   let app;
@@ -33,19 +34,15 @@ describeIfDb("password reset", () => {
       .send({ email: payload.email });
     expect(resetRequest.status).toBe(200);
     expect(resetRequest.body.message).toBe(GENERIC_MESSAGE);
+    expect(resetRequest.body.token).toBeTruthy();
 
-    const reset = await prisma.passwordReset.findFirst({
-      where: { userId: response.body.user.id, usedAt: null },
-      orderBy: { createdAt: "desc" },
-    });
-    expect(reset).toBeTruthy();
-
-    const preview = await request(app).get(`/api/auth/password-reset/${reset.token}`);
+    const rawToken = resetRequest.body.token;
+    const preview = await request(app).get(`/api/auth/password-reset/${rawToken}`);
     expect(preview.status).toBe(200);
     expect(preview.body.email).toBe(payload.email);
 
     const complete = await request(app)
-      .post(`/api/auth/password-reset/${reset.token}`)
+      .post(`/api/auth/password-reset/${rawToken}`)
       .send({ password: "newpassword99" });
     expect(complete.status).toBe(200);
     expect(complete.body.token).toBeTruthy();
@@ -64,7 +61,7 @@ describeIfDb("password reset", () => {
     expect(newLogin.status).toBe(200);
 
     const reused = await request(app)
-      .post(`/api/auth/password-reset/${reset.token}`)
+      .post(`/api/auth/password-reset/${rawToken}`)
       .send({ password: "anotherpassword" });
     expect(reused.status).toBe(404);
   });
@@ -72,16 +69,17 @@ describeIfDb("password reset", () => {
   it("rejects expired and invalid tokens", async () => {
     const { response } = await registerUser(app, { role: "ADMIN" });
     const userId = response.body.user.id;
+    const rawToken = "expired-token-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-    const expired = await prisma.passwordReset.create({
+    await prisma.passwordReset.create({
       data: {
         userId,
-        token: "expired-token-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        token: hashToken(rawToken),
         expiresAt: new Date(Date.now() - 60_000),
       },
     });
 
-    const expiredPreview = await request(app).get(`/api/auth/password-reset/${expired.token}`);
+    const expiredPreview = await request(app).get(`/api/auth/password-reset/${rawToken}`);
     expect(expiredPreview.status).toBe(410);
 
     const bad = await request(app).get("/api/auth/password-reset/not-a-real-token");

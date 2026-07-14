@@ -63,9 +63,19 @@ async function syncBothWays(opts) {
 
   const remotePull = await pull(remoteBase, remoteToken, since);
   const applyRemoteLocally = await push(localBase, localToken, remotePull.changes || {});
+  if (applyRemoteLocally.errors?.length) {
+    throw new Error(
+      `Local apply failed (${applyRemoteLocally.errors.length} error(s)); sync cursor not advanced`,
+    );
+  }
 
   const localPull = await pull(localBase, localToken, since);
   const applyLocalRemotely = await push(remoteBase, remoteToken, localPull.changes || {});
+  if (applyLocalRemotely.errors?.length) {
+    throw new Error(
+      `Remote apply failed (${applyLocalRemotely.errors.length} error(s)); sync cursor not advanced`,
+    );
+  }
 
   const stamps = [remotePull.nextSince, localPull.nextSince, new Date().toISOString()].filter(Boolean);
   const nextSince = stamps.sort().at(-1);

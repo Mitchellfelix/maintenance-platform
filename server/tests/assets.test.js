@@ -37,7 +37,7 @@ describeIfDb("asset routes", () => {
     expect(createResponse.status).toBe(201);
     expect(createResponse.body.name).toBe("Pump 1");
 
-    const listResponse = await request(app).get("/api/assets");
+    const listResponse = await request(app).get("/api/assets").set(authHeader(token));
     expect(listResponse.status).toBe(200);
     expect(listResponse.body).toHaveLength(1);
   });
@@ -47,13 +47,17 @@ describeIfDb("asset routes", () => {
       serialNumber: "SN-002",
     });
 
-    const response = await request(app).get(`/api/assets/${createResponse.body.id}`);
+    const response = await request(app)
+      .get(`/api/assets/${createResponse.body.id}`)
+      .set(authHeader(token));
     expect(response.status).toBe(200);
     expect(response.body.name).toBe("Pump 1");
   });
 
   it("returns 404 for a missing asset", async () => {
-    const response = await request(app).get("/api/assets/nonexistent-id");
+    const response = await request(app)
+      .get("/api/assets/nonexistent-id")
+      .set(authHeader(token));
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("Asset not found");
   });

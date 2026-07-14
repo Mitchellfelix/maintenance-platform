@@ -133,7 +133,11 @@ async function cancelAccessRequest(requester, requestId) {
 async function approveAccessRequest(reviewer, requestId, { reviewNote, requestedRole, requestedSiteIds } = {}) {
   const existing = await prisma.accessRequest.findUnique({
     where: { id: requestId },
-    include: { requester: true },
+    include: {
+      requester: {
+        select: { id: true, email: true, name: true, role: true, status: true },
+      },
+    },
   });
 
   if (!existing) {

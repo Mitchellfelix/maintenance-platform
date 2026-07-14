@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { workOrdersCreate, workOrdersUpdate, workOrdersDelete } = require("../middleware/routeGuards");
+const { workOrdersCreate, workOrdersUpdate, workOrdersDelete, workOrdersRead, workOrdersAssign } = require("../middleware/routeGuards");
 const { createWorkOrderSchema, updateWorkOrderSchema } = require("../schemas/workOrder");
 const { createWorkOrderWithCode } = require("../services/workOrderCode");
 const { applyStatusTimestamps } = require("../services/workOrderStatus");
@@ -10,8 +9,11 @@ const { canEditWorkOrder, filterWorkOrderUpdate } = require("../services/workOrd
 const { recordAudit } = require("../services/auditService");
 const { getAccessibleSiteIds, buildSiteIdFilter, assertSiteAccess } = require("../services/siteAccessService");
 const { hasPermission } = require("../lib/permissions");
+const { USER_PUBLIC_SELECT } = require("../lib/userSelect");
 
 const router = express.Router();
+
+const workOrderUserInclude = { select: USER_PUBLIC_SELECT };
 
 async function assertActiveAssignee(assigneeId) {
   if (!assigneeId) return;
@@ -23,18 +25,18 @@ async function assertActiveAssignee(assigneeId) {
     throw Object.assign(new Error("Assignee not found or inactive"), { status: 400 });
   }
 }
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...workOrdersRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const orders = await prisma.workOrder.findMany({
       where: buildSiteIdFilter(siteIds),
       include: {
         asset: true,
-        assignee: true,
-        requester: true,
+        assignee: workOrderUserInclude,
+        requester: workOrderUserInclude,
         site: true,
         notes: true,
-        timeEntries: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
+        timeEntries: { include: { user: workOrderUserInclude } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -44,19 +46,19 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...workOrdersRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const order = await prisma.workOrder.findFirst({
       where: { id: req.params.id, ...buildSiteIdFilter(siteIds) },
       include: {
         asset: true,
-        assignee: true,
-        requester: true,
+        assignee: workOrderUserInclude,
+        requester: workOrderUserInclude,
         site: true,
         notes: true,
         timeEntries: {
-          include: { user: { select: { id: true, name: true, email: true, role: true } } },
+          include: { user: workOrderUserInclude },
           orderBy: [{ workDate: "desc" }, { createdAt: "desc" }],
         },
       },

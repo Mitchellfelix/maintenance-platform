@@ -40,7 +40,10 @@ const PERMISSIONS = {
   "workorders:create": ROLES,
   "workorders:update": ["ADMIN", "OPS_LEAD", "OPERATOR", "REQUESTER"],
   "workorders:delete": ["ADMIN", "OPS_LEAD"],
-  "workorders:assign": ROLES,
+  "workorders:assign": ["ADMIN", "OPS_LEAD", "OPERATOR"],
+
+  // Offline ↔ online sync (field roles only — not REQUESTER)
+  "sync:use": ["ADMIN", "OPS_LEAD", "OPERATOR"],
 
   // Time tracking
   "time-entries:write": ["ADMIN", "OPS_LEAD", "OPERATOR"],

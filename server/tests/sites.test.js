@@ -33,7 +33,10 @@ describeIfDb("site routes", () => {
     expect(createResponse.status).toBe(201);
     expect(createResponse.body.name).toBe("Plant A");
 
-    const listResponse = await request(app).get("/api/sites");
+    const unauth = await request(app).get("/api/sites");
+    expect(unauth.status).toBe(401);
+
+    const listResponse = await request(app).get("/api/sites").set(authHeader(token));
     expect(listResponse.status).toBe(200);
     expect(listResponse.body).toHaveLength(1);
   });
@@ -41,13 +44,17 @@ describeIfDb("site routes", () => {
   it("returns a site by id", async () => {
     const { response: createResponse } = await createSite(app, token);
 
-    const response = await request(app).get(`/api/sites/${createResponse.body.id}`);
+    const response = await request(app)
+      .get(`/api/sites/${createResponse.body.id}`)
+      .set(authHeader(token));
     expect(response.status).toBe(200);
     expect(response.body.name).toBe("Plant A");
   });
 
   it("returns 404 for a missing site", async () => {
-    const response = await request(app).get("/api/sites/nonexistent-id");
+    const response = await request(app)
+      .get("/api/sites/nonexistent-id")
+      .set(authHeader(token));
     expect(response.status).toBe(404);
     expect(response.body.error).toBe("Site not found");
   });
@@ -73,7 +80,9 @@ describeIfDb("site routes", () => {
 
     expect(response.status).toBe(204);
 
-    const getResponse = await request(app).get(`/api/sites/${createResponse.body.id}`);
+    const getResponse = await request(app)
+      .get(`/api/sites/${createResponse.body.id}`)
+      .set(authHeader(token));
     expect(getResponse.status).toBe(404);
   });
 

@@ -5,6 +5,7 @@ const { canManageRole, isSiteScopedRole, ROLE_LABELS } = require("../lib/permiss
 const { setUserSiteAccess } = require("./siteAccessService");
 const { recordAudit } = require("./auditService");
 const { sendMailTo, mailConfigured, appBaseUrl, notifyAccountReady } = require("./notifyService");
+const { hashToken, generateToken } = require("../lib/tokens");
 
 const SALT_ROUNDS = 10;
 const INVITE_TTL_DAYS = 7;
@@ -23,11 +24,7 @@ function generatePassword(length = 12) {
   return out;
 }
 
-function generateInviteToken() {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-function serializeInvite(invite) {
+function serializeInvite(invite, rawToken = null) {
   return {
     id: invite.id,
     email: invite.email,
@@ -45,7 +42,7 @@ function serializeInvite(invite) {
           email: invite.invitedBy.email,
         }
       : undefined,
-    inviteUrl: `${appBaseUrl()}/invite/${invite.token}`,
+    inviteUrl: rawToken ? `${appBaseUrl()}/invite/${rawToken}` : undefined,
   };
 }
 
@@ -141,7 +138,7 @@ async function createInvite(actor, data) {
   }
 
   const siteIds = await validateCreateSites(data.role, data.siteIds);
-  const token = generateInviteToken();
+  const rawToken = generateToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
 
   const invite = await prisma.userInvite.create({
@@ -150,7 +147,7 @@ async function createInvite(actor, data) {
       name: data.name?.trim() || null,
       role: data.role,
       siteIds: isSiteScopedRole(data.role) ? siteIds : null,
-      token,
+      token: hashToken(rawToken),
       invitedById: actor.id,
       expiresAt,
     },
@@ -167,7 +164,7 @@ async function createInvite(actor, data) {
     metadata: { email, role: data.role, siteIds },
   });
 
-  const serialized = serializeInvite(invite);
+  const serialized = serializeInvite(invite, rawToken);
   let emailResult = { skipped: true, reason: "email not configured" };
 
   if (mailConfigured()) {
@@ -239,7 +236,7 @@ async function revokeInvite(actor, inviteId) {
 
 async function getInviteByToken(token) {
   const invite = await prisma.userInvite.findUnique({
-    where: { token },
+    where: { token: hashToken(token) },
     include: {
       invitedBy: { select: { id: true, name: true, email: true } },
     },
@@ -257,7 +254,7 @@ async function getInviteByToken(token) {
 }
 
 async function acceptInvite(token, { password, name }) {
-  const invite = await prisma.userInvite.findUnique({ where: { token } });
+  const invite = await prisma.userInvite.findUnique({ where: { token: hashToken(token) } });
   if (!invite || invite.revokedAt) {
     throw Object.assign(new Error("Invite not found"), { status: 404 });
   }

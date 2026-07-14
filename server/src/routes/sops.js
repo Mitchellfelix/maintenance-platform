@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { sopsWrite, sopsDelete } = require("../middleware/routeGuards");
+const { sopsWrite, sopsDelete, sopsRead } = require("../middleware/routeGuards");
 const { createSopSchema, updateSopSchema } = require("../schemas/sops");
 const { recordAudit } = require("../services/auditService");
 
@@ -49,7 +48,7 @@ function hasSopContentChanges(existing, next) {
   return JSON.stringify(before) !== JSON.stringify(after);
 }
 
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...sopsRead, async (req, res, next) => {
   try {
     const { department } = req.query;
 
@@ -64,7 +63,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id/versions", optionalAuth, async (req, res, next) => {
+router.get("/:id/versions", ...sopsRead, async (req, res, next) => {
   try {
     const sop = await prisma.sopDocument.findUnique({ where: { id: req.params.id } });
     if (!sop) return res.status(404).json({ error: "SOP not found" });
@@ -81,7 +80,7 @@ router.get("/:id/versions", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id/versions/:versionId", optionalAuth, async (req, res, next) => {
+router.get("/:id/versions/:versionId", ...sopsRead, async (req, res, next) => {
   try {
     const version = await prisma.sopVersion.findFirst({
       where: { id: req.params.versionId, sopId: req.params.id },
@@ -94,7 +93,7 @@ router.get("/:id/versions/:versionId", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...sopsRead, async (req, res, next) => {
   try {
     const sop = await prisma.sopDocument.findUnique({ where: { id: req.params.id } });
     if (!sop) return res.status(404).json({ error: "SOP not found" });

@@ -22,6 +22,31 @@ let mainWindow = null;
 let config = { mode: "", teamUrl: "", lastSyncAt: null };
 let stackStarted = false;
 
+function isSafeHttpUrl(value) {
+  try {
+    const parsed = new URL(String(value || "").trim());
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function normalizeTeamUrl(value) {
+  const trimmed = String(value || "")
+    .trim()
+    .replace(/\/+$/, "");
+  if (!trimmed || !isSafeHttpUrl(trimmed)) {
+    throw new Error("Team URL must be a valid http:// or https:// address");
+  }
+  return trimmed;
+}
+
+function openExternalSafe(url) {
+  if (!isSafeHttpUrl(url)) return false;
+  void shell.openExternal(url);
+  return true;
+}
+
 function configPath() {
   return path.join(app.getPath("userData"), "emat-config.json");
 }
@@ -187,7 +212,7 @@ function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    openExternalSafe(url);
     return { action: "deny" };
   });
 }
@@ -438,7 +463,7 @@ function buildMenu() {
           label: "Open Team URL in Browser",
           click: () => {
             const url = readConfig().teamUrl;
-            if (url) void shell.openExternal(url);
+            if (url) openExternalSafe(url);
           },
         },
       ],
@@ -454,9 +479,9 @@ ipcMain.handle("team:save-config", async (_event, payload) => {
   const mode = payload?.mode === "online" ? "online" : "offline";
   let teamUrl = typeof payload?.teamUrl === "string" ? payload.teamUrl.trim().replace(/\/+$/, "") : "";
   if (mode === "online") {
-    if (!/^https?:\/\//i.test(teamUrl)) {
-      throw new Error("Team URL must start with http:// or https://");
-    }
+    teamUrl = normalizeTeamUrl(teamUrl);
+  } else if (teamUrl && !isSafeHttpUrl(teamUrl)) {
+    throw new Error("Team URL must be a valid http:// or https:// address");
   }
   writeConfig({ mode, teamUrl: teamUrl || config.teamUrl || "" });
   if (mode === "online") await bootOnline();
@@ -466,7 +491,7 @@ ipcMain.handle("team:save-config", async (_event, payload) => {
 
 // Back-compat for older setup form
 ipcMain.handle("team:save-url", async (_event, url) => {
-  writeConfig({ mode: "online", teamUrl: String(url || "").replace(/\/+$/, "") });
+  writeConfig({ mode: "online", teamUrl: normalizeTeamUrl(url) });
   await bootOnline();
   return { ok: true, url: config.teamUrl };
 });

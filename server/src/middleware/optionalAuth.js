@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
+const prisma = require("../lib/prisma");
 
-module.exports = (req, res, next) => {
+/**
+ * Optional auth — attaches req.user when a valid ACTIVE user token is present.
+ * Never elevates missing/invalid tokens to admin-wide access.
+ */
+module.exports = async (req, res, next) => {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : header;
 
@@ -9,7 +14,20 @@ module.exports = (req, res, next) => {
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+      },
+    });
+    if (user && user.status === "ACTIVE") {
+      req.user = user;
+    }
   } catch {
     // Ignore invalid tokens on optional auth routes.
   }

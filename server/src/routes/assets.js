@@ -1,8 +1,7 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
-const optionalAuth = require("../middleware/optionalAuth");
 const validate = require("../middleware/validate");
-const { assetsWrite, assetsDelete } = require("../middleware/routeGuards");
+const { assetsWrite, assetsDelete, assetsRead } = require("../middleware/routeGuards");
 const { createAssetSchema, updateAssetSchema } = require("../schemas/asset");
 const { recordAudit } = require("../services/auditService");
 const {
@@ -13,7 +12,7 @@ const {
 
 const router = express.Router();
 
-router.get("/", optionalAuth, async (req, res, next) => {
+router.get("/", ...assetsRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const assets = await prisma.asset.findMany({
@@ -27,7 +26,7 @@ router.get("/", optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get("/:id", optionalAuth, async (req, res, next) => {
+router.get("/:id", ...assetsRead, async (req, res, next) => {
   try {
     const siteIds = await getAccessibleSiteIds(req.user);
     const asset = await prisma.asset.findFirst({

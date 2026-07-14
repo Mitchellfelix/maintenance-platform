@@ -25,6 +25,25 @@ const {
 } = require("./routes/join");
 const { ensureUploadDirs, UPLOAD_ROOT } = require("./lib/uploads");
 
+function resolveCorsOrigin() {
+  const raw = (process.env.CORS_ORIGIN || "").trim();
+  const appUrl = (process.env.EMAT_APP_URL || process.env.APP_URL || "").replace(/\/$/, "");
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (!raw || raw === "true") {
+    if (isProd) {
+      // Never reflect arbitrary Origins in production.
+      return appUrl || false;
+    }
+    return true;
+  }
+
+  if (raw.includes(",")) {
+    return raw.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  return raw;
+}
+
 function createApp() {
   ensureUploadDirs();
   const app = express();
@@ -32,14 +51,10 @@ function createApp() {
   // Railway / reverse proxies terminate TLS; needed for secure cookies and public URLs.
   app.set("trust proxy", 1);
 
-  const corsOrigin =
-    !process.env.CORS_ORIGIN || process.env.CORS_ORIGIN === "true"
-      ? true
-      : process.env.CORS_ORIGIN;
-  app.use(cors({ origin: corsOrigin }));
-  app.use(express.json());
+  app.use(cors({ origin: resolveCorsOrigin() }));
+  app.use(express.json({ limit: "2mb" }));
   app.use(express.static(path.join(__dirname, "..", "public")));
-  app.use("/uploads", express.static(UPLOAD_ROOT));
+  app.use("/uploads", express.static(UPLOAD_ROOT, { index: false, dotfiles: "deny" }));
 
   // Preconfigured Mac download (Team URL baked in) — before static /downloads.
   app.get("/downloads/EMAT-ready.zip", createReadyZipHandler());

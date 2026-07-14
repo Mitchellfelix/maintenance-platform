@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
+const { createRateLimiter } = require("../middleware/rateLimit");
 const {
   registerSchema,
   loginSchema,
@@ -18,7 +19,13 @@ const {
 
 const router = Router();
 
-router.post("/register", validate(registerSchema), async (req, res, next) => {
+const authAttemptLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: "Too many auth attempts. Try again later.",
+});
+
+router.post("/register", authAttemptLimiter, validate(registerSchema), async (req, res, next) => {
   try {
     const result = await authService.register(req.validated);
     res.status(201).json(result);
@@ -27,7 +34,7 @@ router.post("/register", validate(registerSchema), async (req, res, next) => {
   }
 });
 
-router.post("/login", validate(loginSchema), async (req, res, next) => {
+router.post("/login", authAttemptLimiter, validate(loginSchema), async (req, res, next) => {
   try {
     const result = await authService.login(req.validated);
     res.json(result);
@@ -36,7 +43,7 @@ router.post("/login", validate(loginSchema), async (req, res, next) => {
   }
 });
 
-router.post("/password-reset", validate(requestPasswordResetSchema), async (req, res, next) => {
+router.post("/password-reset", authAttemptLimiter, validate(requestPasswordResetSchema), async (req, res, next) => {
   try {
     const result = await requestPasswordReset({
       email: req.validated.email,

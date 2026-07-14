@@ -34,7 +34,7 @@ Set variables on the web service:
 | `JWT_SECRET` | long random string |
 | `EMAT_APP_URL` | `https://YOUR-APP.up.railway.app` |
 | `APP_URL` | same as `EMAT_APP_URL` |
-| `CORS_ORIGIN` | `true` |
+| `CORS_ORIGIN` | same as `EMAT_APP_URL` (comma-separated allowlist if needed) |
 | `EMAT_DATA_DIR` | `/data` |
 | `HOST` | `0.0.0.0` |
 | `DATABASE_URL` | *(from Postgres plugin — auto)* |
@@ -80,7 +80,30 @@ npm run railway:publish-mac
 
 This packages the Electron zip and streams it to `/data/downloads/EMAT-mac.zip` on the volume.
 
-### 6. Tell the team
+### 6. Email notifications (recommended)
+
+Without these variables, access-request / approval emails are skipped.
+
+1. Create a free [Resend](https://resend.com) account and API key.
+2. Set a From address Resend will accept (for quick testing: their `onboarding@resend.dev`; for real teammates: verify your domain in Resend).
+3. On the **emat** web service → Variables:
+
+| Variable | Example |
+|----------|---------|
+| `RESEND_API_KEY` | `re_xxxxxxxx` |
+| `MAIL_FROM` | `EMAT <onboarding@resend.dev>` or `EMAT <notifications@yourdomain.com>` |
+| `EMAT_APP_URL` / `APP_URL` | `https://emat-production.up.railway.app` (already set) |
+
+Redeploy (or let Railway auto-redeploy on variable change).
+
+What gets emailed once configured:
+- **Admins / Ops leads** — new access request
+- **Requester** — when you approve (or when an admin creates their account)
+- Password-reset emails when that flow is used
+
+Optional Slack (access requests only): `SLACK_WEBHOOK_URL=…`
+
+### 7. Tell the team
 
 Send only:
 
