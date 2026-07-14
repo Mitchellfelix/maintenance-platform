@@ -12,6 +12,7 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
+RUN apk add --no-cache unzip zip
 COPY package*.json ./
 COPY server/package*.json ./server/
 COPY server/prisma ./server/prisma

@@ -40,12 +40,19 @@ function hasMacDownload() {
 /**
  * Inject this host’s Team URL without corrupting the .app (macOS apps need
  * Frameworks symlinks — never rewrite the zip with adm-zip).
+ * Works on Linux (Railway) via unzip/zip and on macOS via ditto when present.
  */
 function buildReadyZipFile(teamUrl) {
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), "emat-ready-"));
   const outZip = path.join(stage, READY_NAME);
   try {
-    execFileSync("ditto", ["-x", "-k", baseZipPath(), stage], { stdio: "pipe" });
+    const baseZip = baseZipPath();
+    try {
+      execFileSync("unzip", ["-qo", baseZip, "-d", stage], { stdio: "pipe" });
+    } catch {
+      execFileSync("ditto", ["-x", "-k", baseZip, stage], { stdio: "pipe" });
+    }
+
     const defaultsPath = path.join(stage, DEFAULTS_REL);
     fs.mkdirSync(path.dirname(defaultsPath), { recursive: true });
     fs.writeFileSync(
@@ -62,11 +69,11 @@ function buildReadyZipFile(teamUrl) {
     );
 
     const appPath = path.join(stage, APP_NAME);
-    if (fs.existsSync(appPath)) {
+    if (process.platform === "darwin" && fs.existsSync(appPath)) {
       try {
         execFileSync("codesign", ["--force", "--deep", "--sign", "-", appPath], { stdio: "pipe" });
       } catch {
-        // Ad-hoc sign is best-effort on non-mac hosts.
+        // Ad-hoc sign is best-effort.
       }
     }
 

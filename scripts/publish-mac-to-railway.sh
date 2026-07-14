@@ -5,6 +5,7 @@
 # Prerequisites:
 #   - railway CLI linked to the web service
 #   - Volume mounted at /data with EMAT_DATA_DIR=/data on the service
+#   - SSH key registered: railway ssh keys add
 #
 # Usage:
 #   npm run railway:publish-mac
@@ -29,14 +30,28 @@ if [[ ! -f "$ZIP" ]]; then
 fi
 
 BYTES="$(wc -c <"$ZIP" | tr -d ' ')"
-echo "Publishing $ZIP ($BYTES bytes) to Railway \${EMAT_DATA_DIR:-/data}/downloads/…"
+echo "Publishing $ZIP ($BYTES bytes) to Railway volume /downloads/…"
 
-# Stream zip into the running service volume.
-if railway ssh -- bash -lc 'mkdir -p "${EMAT_DATA_DIR:-/data}/downloads" && cat > "${EMAT_DATA_DIR:-/data}/downloads/EMAT-mac.zip"' <"$ZIP"; then
-  echo "Published."
-  echo "Verify: open https://YOUR-APP.up.railway.app/join — Mac install should appear."
-else
-  echo "railway ssh upload failed."
-  echo "Fallback: use Railway dashboard → service → shell, then upload the zip to \$EMAT_DATA_DIR/downloads/."
-  exit 1
+VOL="${RAILWAY_VOLUME:-emat-volume}"
+IDENTITY="${RAILWAY_SSH_IDENTITY:-$HOME/.ssh/id_ecdsa}"
+
+upload_ok=0
+if railway volume files -v "$VOL" upload "$ZIP" /downloads/EMAT-mac.zip --overwrite 2>/tmp/emat-vol-upload.err; then
+  upload_ok=1
+elif [[ -f "$IDENTITY" ]] && railway ssh -i "$IDENTITY" -- bash -lc 'mkdir -p "${EMAT_DATA_DIR:-/data}/downloads" && cat > "${EMAT_DATA_DIR:-/data}/downloads/EMAT-mac.zip"' <"$ZIP"; then
+  upload_ok=1
+elif railway ssh -- bash -lc 'mkdir -p "${EMAT_DATA_DIR:-/data}/downloads" && cat > "${EMAT_DATA_DIR:-/data}/downloads/EMAT-mac.zip"' <"$ZIP"; then
+  upload_ok=1
 fi
+
+if [[ "$upload_ok" -eq 1 ]]; then
+  echo "Published."
+  echo "Verify: open your Railway Join URL — Mac install should appear."
+  exit 0
+fi
+
+echo "Upload failed."
+cat /tmp/emat-vol-upload.err 2>/dev/null || true
+echo "Register an SSH key if needed: railway ssh keys add"
+echo "Then re-run: npm run railway:publish-mac"
+exit 1
