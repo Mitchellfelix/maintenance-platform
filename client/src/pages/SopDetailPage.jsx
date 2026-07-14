@@ -17,7 +17,7 @@ function VersionDetail({ version }) {
           href={version.documentUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex font-medium text-emerald-700 hover:underline"
+          className="inline-flex font-medium text-orange-400 hover:underline"
         >
           Open document
         </a>
@@ -129,7 +129,7 @@ export default function SopDetailPage() {
     return (
       <div>
         <ErrorBanner message={error || "SOP not found."} />
-        <Link to="/sops" className="text-sm font-medium text-emerald-700 hover:underline">
+        <Link to="/sops" className="text-sm font-medium text-orange-400 hover:underline">
           Back to SOPs
         </Link>
       </div>
@@ -154,7 +154,7 @@ export default function SopDetailPage() {
         <section className="rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-semibold">Current procedure</h3>
-            <span className="rounded-full bg-emerald-950 px-2.5 py-1 text-xs font-medium text-emerald-300">
+            <span className="rounded-full bg-orange-950 px-2.5 py-1 text-xs font-medium text-orange-300">
               v{sop.version}
             </span>
           </div>
@@ -164,7 +164,7 @@ export default function SopDetailPage() {
               href={sop.documentUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+              className="mt-4 inline-flex rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
             >
               Open document
             </a>
@@ -245,7 +245,7 @@ export default function SopDetailPage() {
                 : "Ops Lead access is required to edit SOPs."}
             </p>
             {!isAuthenticated ? (
-              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
                 Sign in
               </Link>
             ) : null}
@@ -294,7 +294,7 @@ export default function SopDetailPage() {
                           <button
                             type="button"
                             onClick={() => setExpandedVersionId(isExpanded ? null : version.id)}
-                            className="text-sm font-medium text-emerald-700 hover:underline"
+                            className="text-sm font-medium text-orange-400 hover:underline"
                           >
                             {isExpanded ? "Hide" : "View"}
                           </button>

@@ -18,7 +18,7 @@ function navClassName({ isActive }) {
   return [
     "rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 ease-out",
     isActive
-      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30"
+      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/30"
       : "text-slate-300 hover:translate-x-0.5 hover:bg-white/10 hover:text-white",
   ].join(" ");
 }
@@ -28,14 +28,14 @@ export default function Layout() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-500/20" />
+      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-orange-500/20" />
       <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-500/15 [animation-delay:-4s]" />
-      <div className="flow-orb bottom-0 left-1/3 h-72 w-72 bg-teal-500/15 [animation-delay:-8s]" />
+      <div className="flow-orb bottom-0 left-1/3 h-72 w-72 bg-amber-500/15 [animation-delay:-8s]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:flex-row lg:px-6">
         <aside className="flex shrink-0 flex-col gap-6 rounded-[2rem] border border-white/10 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 p-6 text-white shadow-2xl shadow-slate-900/25 lg:w-64">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300/90">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-orange-300/90">
               EMAT Tracking Database
             </p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">Navy Sustainment</h1>

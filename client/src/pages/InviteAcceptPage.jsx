@@ -70,9 +70,9 @@ export default function InviteAcceptPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
-      <div className="flow-orb -left-16 top-10 h-72 w-72 bg-emerald-300/40" />
+      <div className="flow-orb -left-16 top-10 h-72 w-72 bg-orange-300/40" />
       <div className="flow-card relative w-full max-w-md p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700">EMAT</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-400">EMAT</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Accept invite</h1>
         {loading ? <LoadingState label="Loading invite..." /> : null}
         <ErrorBanner message={error} />
@@ -103,7 +103,7 @@ export default function InviteAcceptPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+              className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {submitting ? "Creating account..." : "Create account"}
             </button>
@@ -111,7 +111,7 @@ export default function InviteAcceptPage() {
         ) : null}
         {!loading && !invite ? (
           <p className="mt-4 text-sm text-slate-300">
-            <Link to="/login" className="font-medium text-emerald-700 hover:underline">
+            <Link to="/login" className="font-medium text-orange-400 hover:underline">
               Back to sign in
             </Link>
           </p>

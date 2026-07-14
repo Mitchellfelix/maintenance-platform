@@ -107,7 +107,7 @@ export default function SiteDetailPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 Save changes
               </button>
@@ -131,7 +131,7 @@ export default function SiteDetailPage() {
                 : "Ops Lead or Operator access is required to edit sites."}
             </p>
             {!isAuthenticated ? (
-              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
                 Sign in
               </Link>
             ) : null}

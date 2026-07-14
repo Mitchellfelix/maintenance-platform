@@ -193,7 +193,7 @@ export default function UsersAdminPage() {
       />
       <ErrorBanner message={error} />
       {notice ? (
-        <div className="rounded-2xl border border-emerald-800 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-100">
+        <div className="rounded-2xl border border-orange-800 bg-orange-950/60 px-4 py-3 text-sm text-orange-100">
           {notice}
         </div>
       ) : null}
@@ -264,7 +264,7 @@ export default function UsersAdminPage() {
             <button
               type="submit"
               disabled={creating || (isSiteScopedRole(createForm.role) && createForm.siteIds.length === 0)}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
             >
               {creating ? "Creating..." : "Create user"}
             </button>
@@ -321,7 +321,7 @@ export default function UsersAdminPage() {
             <button
               type="submit"
               disabled={inviting || (isSiteScopedRole(inviteForm.role) && inviteForm.siteIds.length === 0)}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
             >
               {inviting ? "Sending..." : "Send invite"}
             </button>
@@ -358,7 +358,7 @@ export default function UsersAdminPage() {
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      className="text-xs font-medium text-emerald-700 hover:underline"
+                      className="text-xs font-medium text-orange-400 hover:underline"
                       onClick={() => navigator.clipboard?.writeText(invite.inviteUrl)}
                     >
                       Copy link
@@ -405,7 +405,7 @@ export default function UsersAdminPage() {
                       className={[
                         "inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize",
                         user.status === "ACTIVE"
-                          ? "bg-emerald-950 text-emerald-300"
+                          ? "bg-orange-950 text-orange-300"
                           : "bg-amber-100 text-amber-800",
                       ].join(" ")}
                     >

@@ -107,11 +107,11 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-8">
-      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-emerald-500/20" />
+      <div className="flow-orb -left-20 top-0 h-96 w-96 bg-orange-500/20" />
       <div className="flow-orb right-0 top-1/4 h-80 w-80 bg-sky-500/15 [animation-delay:-4s]" />
 
       <div className="flow-page relative mx-auto w-full max-w-md rounded-[2rem] border border-slate-600 bg-slate-900/95 p-8 shadow-[0_20px_60px_rgb(2,6,23,0.55)] backdrop-blur-md">
-        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-emerald-400">
+        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-orange-400">
           EMAT Tracking Database
         </p>
         <h2 className="mt-3 text-3xl font-bold">{mode === "login" ? "Sign in" : "Request access"}</h2>
@@ -204,7 +204,7 @@ export default function LoginPage() {
           />
           {mode === "login" ? (
             <div className="-mt-2 text-right">
-              <Link to="/forgot-password" className="text-sm font-medium text-emerald-700 hover:underline">
+              <Link to="/forgot-password" className="text-sm font-medium text-orange-400 hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -212,7 +212,7 @@ export default function LoginPage() {
 
           <ErrorBanner message={error} />
           {success ? (
-            <div className="rounded-xl border border-emerald-800 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-100">
+            <div className="rounded-xl border border-orange-800 bg-orange-950/60 px-4 py-3 text-sm text-orange-100">
               {success}
             </div>
           ) : null}
@@ -225,7 +225,7 @@ export default function LoginPage() {
                 isSiteScopedRole(form.requestedRole) &&
                 form.requestedSiteIds.length === 0)
             }
-            className="w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-60"
+            className="w-full rounded-xl bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
           >
             {submitting
               ? "Please wait..."

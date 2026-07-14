@@ -128,7 +128,7 @@ export default function AccessRequestsAdminPage() {
             onClick={() => setFilter(value)}
             className={[
               "rounded-xl px-3 py-2 text-sm font-medium",
-              filter === value ? "bg-emerald-500 text-white" : "border border-slate-600 bg-slate-800/90 text-slate-200",
+              filter === value ? "bg-orange-500 text-white" : "border border-slate-600 bg-slate-800/90 text-slate-200",
             ].join(" ")}
           >
             {value ? value.replaceAll("_", " ").toLowerCase() : "All"}
@@ -238,7 +238,7 @@ export default function AccessRequestsAdminPage() {
                                 (isSiteScopedRole(draft.requestedRole) &&
                                   (draft.requestedSiteIds?.length ?? 0) === 0)
                               }
-                              className="rounded-xl bg-emerald-500 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                              className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                             >
                               Approve
                             </button>

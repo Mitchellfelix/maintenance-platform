@@ -92,7 +92,7 @@ textarea {
 
   .flow-metric:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 32px rgb(16 185 129 / 0.18);
+    box-shadow: 0 10px 32px rgb(249 115 22 / 0.18);
   }
 
   .flow-panel {
@@ -124,9 +124,9 @@ textarea {
   }
 
   .flow-input:focus {
-    border-color: rgb(52 211 153);
+    border-color: rgb(251 146 60);
     background: rgb(15 23 42);
-    box-shadow: 0 0 0 3px rgb(16 185 129 / 0.2);
+    box-shadow: 0 0 0 3px rgb(249 115 22 / 0.2);
   }
 
   .flow-input:disabled {

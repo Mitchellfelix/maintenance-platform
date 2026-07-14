@@ -58,7 +58,7 @@ export default function SitesPage() {
         description="Manage locations where assets and work orders are tracked."
         action={
           !isAuthenticated ? (
-            <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/login" className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to create
             </Link>
           ) : !can("sites:write") ? (

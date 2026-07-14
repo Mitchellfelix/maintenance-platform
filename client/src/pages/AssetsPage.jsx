@@ -86,7 +86,7 @@ export default function AssetsPage() {
         description="Track equipment status and linked maintenance work."
         action={
           !isAuthenticated ? (
-            <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/login" className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to create
             </Link>
           ) : !can("assets:write") ? (

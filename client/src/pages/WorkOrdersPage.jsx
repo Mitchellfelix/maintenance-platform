@@ -100,7 +100,7 @@ export default function WorkOrdersPage() {
         description="Create and track maintenance tasks across sites and assets."
         action={
           !isAuthenticated ? (
-            <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/login" className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to create
             </Link>
           ) : !can("workorders:create") ? (

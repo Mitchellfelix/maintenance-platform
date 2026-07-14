@@ -170,7 +170,7 @@ export default function AccessRequestPage() {
           <button
             type="submit"
             disabled={submitting || (isSiteScopedRole(form.requestedRole) && form.requestedSiteIds.length === 0)}
-            className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {submitting ? "Submitting..." : "Submit request"}
           </button>

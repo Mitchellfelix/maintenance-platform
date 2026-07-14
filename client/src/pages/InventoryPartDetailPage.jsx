@@ -107,7 +107,7 @@ export default function InventoryPartDetailPage() {
       {!part ? (
         <p className="text-sm text-slate-400">
           Part not found.{" "}
-          <Link to="/inventory" className="font-medium text-emerald-400">
+          <Link to="/inventory" className="font-medium text-orange-400">
             Back to inventory
           </Link>
         </p>
@@ -151,7 +151,7 @@ export default function InventoryPartDetailPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {submitting ? "Saving..." : "Save changes"}
             </button>
@@ -195,7 +195,7 @@ export default function InventoryPartDetailPage() {
             </div>
           </dl>
           {!isAuthenticated ? (
-            <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/login" className="mt-4 inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to edit
             </Link>
           ) : null}

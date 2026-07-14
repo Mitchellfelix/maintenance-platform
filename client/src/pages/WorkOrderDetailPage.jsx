@@ -268,7 +268,7 @@ export default function WorkOrderDetailPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 Save changes
               </button>
@@ -292,7 +292,7 @@ export default function WorkOrderDetailPage() {
                 : "You do not have permission to edit this work order."}
             </p>
             {!isAuthenticated ? (
-              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
                 Sign in
               </Link>
             ) : null}

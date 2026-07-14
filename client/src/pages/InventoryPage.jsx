@@ -100,7 +100,7 @@ export default function InventoryPage() {
         description="Track part numbers and storage locations for each unit."
         action={
           !isAuthenticated ? (
-            <Link to="/login" className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+            <Link to="/login" className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
               Sign in to manage
             </Link>
           ) : !can("inventory:write") ? (

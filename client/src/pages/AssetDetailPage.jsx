@@ -171,7 +171,7 @@ export default function AssetDetailPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 Save changes
               </button>
@@ -195,7 +195,7 @@ export default function AssetDetailPage() {
                 : "Ops Lead or Operator access is required to edit assets."}
             </p>
             {!isAuthenticated ? (
-              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white">
+              <Link to="/login" className="mt-4 inline-flex rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white">
                 Sign in
               </Link>
             ) : null}
@@ -229,7 +229,7 @@ export default function AssetDetailPage() {
                 {inventoryParts.map((part) => (
                   <tr key={part.id} className="border-t border-slate-700">
                     <td className="px-4 py-3">
-                      <Link to={`/inventory/${part.id}`} className="font-medium text-emerald-700 hover:underline">
+                      <Link to={`/inventory/${part.id}`} className="font-medium text-orange-400 hover:underline">
                         {part.partNumber}
                       </Link>
                     </td>
