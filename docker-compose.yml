@@ -31,7 +31,9 @@ services:
       DATABASE_URL: postgresql://maintenance:maintenance@db:5432/maintenance_platform
       NODE_ENV: production
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET to a strong secret (32+ chars)}
+      # JWT_SECRET must come from env_file (server/.env), not ${JWT_SECRET:?...}.
+      # Compose interpolates every service even when the `team` profile is off, which
+      # breaks desktop `docker compose up -d db` when the host shell has no JWT_SECRET.
     env_file:
       - path: server/.env
         required: false

@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog, nativeImage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const http = require("http");
+const https = require("https");
 const { spawn } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
@@ -37,10 +38,18 @@ function isLocalAppUrl(url) {
 }
 
 function pingHealth(baseUrl, timeoutMs = 2500) {
-  const healthUrl = new URL(HEALTH_PATH, baseUrl);
+  let healthUrl;
+  try {
+    healthUrl = new URL(HEALTH_PATH, baseUrl);
+  } catch {
+    return Promise.resolve(false);
+  }
+
+  // Railway / team hosts are HTTPS — http.get alone cannot reach them.
+  const transport = healthUrl.protocol === "https:" ? https : http;
 
   return new Promise((resolve) => {
-    const request = http.get(healthUrl, { timeout: timeoutMs }, (response) => {
+    const request = transport.get(healthUrl, { timeout: timeoutMs }, (response) => {
       response.resume();
       resolve(response.statusCode === 200);
     });

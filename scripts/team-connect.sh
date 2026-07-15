@@ -42,12 +42,19 @@ fi
 
 echo "Configured EMAT_APP_URL=$URL"
 echo ""
+echo "Stopping local team autostart / port ${EMAT_PORT:-3000} (team mode uses the remote host)..."
+bash "$ROOT/scripts/uninstall-team-autostart.sh" >/dev/null 2>&1 || true
+bash "$ROOT/scripts/stop-app.sh" >/dev/null 2>&1 || true
+
 echo "Installing desktop launcher..."
 "$ROOT/scripts/install-app.sh"
 
 echo ""
-echo "Done. Team members can launch with:"
+echo "Done. This Mac now opens the team server (no local port ${EMAT_PORT:-3000})."
 echo "  emat"
 echo ""
 echo "Or open in a browser:"
 echo "  $URL"
+echo ""
+echo "To go back to solo local mode later:"
+echo "  # remove EMAT_APP_URL from server/.env, then: npm run app:launch"

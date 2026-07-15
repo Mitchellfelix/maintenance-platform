@@ -9,6 +9,25 @@ RUNNER="$ROOT/scripts/team-server-run.sh"
 LOG_DIR="${HOME}/Library/Logs/EMAT"
 NODE_BIN="${HOME}/.nvm/versions/node/v22.22.3/bin/node"
 
+# Refuse when this Mac is pointed at Railway / a remote team host — that would
+# fight the remote server by KeepAlive-binding local :3000.
+if [[ -f "$ROOT/server/.env" ]]; then
+  remote_url="$(grep -E '^EMAT_APP_URL=' "$ROOT/server/.env" | tail -1 || true)"
+  remote_url="${remote_url#EMAT_APP_URL=}"
+  remote_url="${remote_url%\"}"
+  remote_url="${remote_url#\"}"
+  remote_url="${remote_url%\'}"
+  remote_url="${remote_url#\'}"
+  if [[ -n "$remote_url" ]] \
+    && [[ ! "$remote_url" =~ ^https?://localhost([:/]|$) ]] \
+    && [[ ! "$remote_url" =~ ^https?://127\.0\.0\.1([:/]|$) ]]; then
+    echo "Refusing local team autostart: EMAT_APP_URL is set to $remote_url"
+    echo "Railway/team mode should not bind port 3000 on this Mac."
+    echo "To host locally again, remove EMAT_APP_URL from server/.env first."
+    exit 1
+  fi
+fi
+
 chmod +x "$RUNNER" "$ROOT/scripts/team-keep-alive.sh" 2>/dev/null || true
 mkdir -p "${HOME}/Library/LaunchAgents" "$LOG_DIR"
 

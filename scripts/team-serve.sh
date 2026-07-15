@@ -22,6 +22,12 @@ if [[ ! -f server/.env ]]; then
   echo "Created server/.env — set a strong JWT_SECRET before production use."
 fi
 
+# team profile reads JWT_SECRET from server/.env (not host env interpolation).
+if ! grep -Eq '^[[:space:]]*JWT_SECRET[[:space:]]*=[[:space:]]*.+' server/.env; then
+  echo "Set JWT_SECRET in server/.env (32+ random chars) before starting the team server."
+  exit 1
+fi
+
 if [[ ! -f "$DOWNLOAD_ZIP" ]]; then
   echo "Mac team app zip not found — packaging now (one-time)..."
   if ! bash "$ROOT/scripts/package-team-client.sh"; then

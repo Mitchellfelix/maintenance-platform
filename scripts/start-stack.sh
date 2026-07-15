@@ -72,22 +72,43 @@ server_healthy() {
   curl -fsS "${APP_URL}/api/health/db" >/dev/null 2>&1
 }
 
-server_running() {
-  if [[ ! -f "$PID_FILE" ]]; then
-    return 1
+port_listener_pids() {
+  if ! command -v lsof >/dev/null 2>&1; then
+    return 0
   fi
-  local pid
-  pid="$(cat "$PID_FILE")"
-  kill -0 "$pid" 2>/dev/null
+  lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true
+}
+
+write_listener_pid() {
+  local listen_pid=""
+  listen_pid="$(port_listener_pids | head -n 1 | tr -d '[:space:]')"
+  if [[ -n "$listen_pid" ]]; then
+    echo "$listen_pid" >"$PID_FILE"
+  fi
 }
 
 wait_for_server() {
   local tries=0
   while (( tries < 60 )); do
     if server_healthy; then
+      write_listener_pid
       return 0
     fi
     sleep 0.5
+    tries=$((tries + 1))
+  done
+  return 1
+}
+
+wait_for_port_free() {
+  local tries=0
+  local pids=""
+  while (( tries < 20 )); do
+    pids="$(port_listener_pids)"
+    if [[ -z "$pids" ]]; then
+      return 0
+    fi
+    sleep 0.25
     tries=$((tries + 1))
   done
   return 1
@@ -111,7 +132,10 @@ start_database() {
   fi
 
   notify "Starting database..."
-  (cd "$ROOT" && docker compose up -d db)
+  if ! (cd "$ROOT" && docker compose up -d db >>"$LOG_FILE" 2>&1); then
+    alert "Could not start PostgreSQL. See $LOG_FILE (is Docker Desktop running?)."
+    exit 1
+  fi
 
   local tries=0
   while (( tries < 40 )); do
@@ -169,28 +193,31 @@ needs_server_restart() {
 
 free_port() {
   local pids=""
-  if command -v lsof >/dev/null 2>&1; then
-    pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
-  fi
+  pids="$(port_listener_pids)"
   if [[ -z "$pids" ]]; then
     return 0
   fi
   # Kill whatever still owns the API port (npm wrapper PIDs often diverge from node).
-  echo "$pids" | xargs kill 2>/dev/null || true
+  # shellcheck disable=SC2086
+  kill $pids 2>/dev/null || true
   sleep 0.4
-  pids="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
+  pids="$(port_listener_pids)"
   if [[ -n "$pids" ]]; then
-    echo "$pids" | xargs kill -9 2>/dev/null || true
+    # shellcheck disable=SC2086
+    kill -9 $pids 2>/dev/null || true
   fi
+  wait_for_port_free || true
 }
 
 stop_local_server() {
   if [[ -f "$PID_FILE" ]]; then
     local pid
     pid="$(cat "$PID_FILE")"
-    kill "$pid" 2>/dev/null || true
-    # Also stop children if PID was an npm wrapper.
-    pkill -P "$pid" 2>/dev/null || true
+    if [[ -n "$pid" ]]; then
+      kill "$pid" 2>/dev/null || true
+      # Also stop children if PID was an npm wrapper.
+      pkill -P "$pid" 2>/dev/null || true
+    fi
     rm -f "$PID_FILE"
   fi
   free_port
@@ -222,20 +249,21 @@ start_local_server() {
 
   ensure_ui_build
 
-  if server_running && server_healthy && ! needs_server_restart; then
+  # Reuse a healthy server even if the npm wrapper pid file is stale/dead.
+  # Without this, relaunch kills a live node then races on port 3000 (works once, fails next).
+  if server_healthy && ! needs_server_restart; then
+    write_listener_pid
     return 0
   fi
 
   # Always release the port before start — a stale node can outlive the pid file.
   stop_local_server
 
-  if command -v lsof >/dev/null 2>&1; then
+  if ! wait_for_port_free; then
     local still_held
-    still_held="$(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
-    if [[ -n "$still_held" ]]; then
-      alert "Port $PORT is still in use (pid $still_held). Quit EMAT / stop the old server, then try again."
-      exit 1
-    fi
+    still_held="$(port_listener_pids | tr '\n' ' ')"
+    alert "Port $PORT is still in use (pid ${still_held:-unknown}). Quit EMAT / run npm run app:stop, then try again."
+    exit 1
   fi
 
   notify "Safety backup before database updates..."
@@ -263,10 +291,12 @@ start_local_server() {
 read_remote_url
 
 if ! is_local_app_url "$APP_URL"; then
+  # Team / Railway mode: do not start local Docker Postgres or bind port 3000.
+  echo "Remote team URL configured ($APP_URL) — skipping local server on port ${PORT}."
   if server_healthy; then
     exit 0
   fi
-  alert "Cannot reach $APP_URL. Connect to VPN or your network and try again."
+  alert "Cannot reach $APP_URL. Check your network, or run: npm run team:connect -- <url>"
   exit 1
 fi
 
