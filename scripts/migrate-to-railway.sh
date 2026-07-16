@@ -64,11 +64,47 @@ fi
 echo "Railway DATABASE_URL: ${RAILWAY_DB_URL%%@*}@…"
 
 echo ""
-echo "=== 3) Confirm restore (DESTROYS current Railway DB contents) ==="
+echo "=== 3) Safety compare (refuse wiping a fuller Railway DB) ==="
+COUNTS_JS="$ROOT/scripts/db-counts.js"
+LOCAL_JSON="$(node "$COUNTS_JS" --local 2>/dev/null || echo '{"error":"unreachable"}')"
+REMOTE_JSON="$(DATABASE_URL="$RAILWAY_DB_URL" node "$COUNTS_JS" 2>/dev/null || echo '{"error":"unreachable"}')"
+echo "Local:   $LOCAL_JSON"
+echo "Railway: $REMOTE_JSON"
+
+LOCAL_JSON="$LOCAL_JSON" REMOTE_JSON="$REMOTE_JSON" EMAT_FORCE_MIGRATE_OVERWRITE="${EMAT_FORCE_MIGRATE_OVERWRITE:-}" node <<'NODE'
+const local = JSON.parse(process.env.LOCAL_JSON || "{}");
+const remote = JSON.parse(process.env.REMOTE_JSON || "{}");
+if (local.error || remote.error) {
+  if (process.env.EMAT_FORCE_MIGRATE_OVERWRITE === "YES") process.exit(0);
+  console.error("Could not compare DB counts. Refusing migrate (set EMAT_FORCE_MIGRATE_OVERWRITE=YES to override).");
+  process.exit(1);
+}
+const score = (j) => (j.users || 0) + (j.sites || 0) + (j.assets || 0) + (j.workOrders || 0);
+const ls = score(local);
+const rs = score(remote);
+if (rs > ls && process.env.EMAT_FORCE_MIGRATE_OVERWRITE !== "YES") {
+  console.error("");
+  console.error(`Refusing migrate: Railway looks fuller (score ${rs}) than local (score ${ls}).`);
+  console.error("Full migrate REPLACES all Railway data with the local dump — that destroys accounts/data.");
+  console.error("");
+  console.error("Prefer non-destructive account sync:");
+  console.error("  npm run railway:sync-users");
+  console.error("");
+  console.error("Only if you truly intend to wipe Railway:");
+  console.error("  EMAT_CONFIRM_MIGRATE=YES EMAT_FORCE_MIGRATE_OVERWRITE=YES npm run railway:migrate");
+  process.exit(1);
+}
+NODE
+
+echo ""
+echo "=== 4) Confirm restore (DESTROYS current Railway DB contents) ==="
 if [[ "${EMAT_CONFIRM_MIGRATE:-}" != "YES" ]]; then
   echo "This replaces ALL data on Railway with your local dump."
   echo "Re-run with:"
   echo "  EMAT_CONFIRM_MIGRATE=YES npm run railway:migrate"
+  echo ""
+  echo "If you only need accounts and must not wipe Railway data:"
+  echo "  npm run railway:sync-users"
   exit 1
 fi
 
@@ -77,7 +113,7 @@ echo "Restoring into Railway…"
 gunzip -c "$BACKUP_OUT" | psql "$RAILWAY_DB_URL" -v ON_ERROR_STOP=1
 
 echo ""
-echo "=== 4) Optional uploads ==="
+echo "=== 5) Optional uploads ==="
 if [[ "${EMAT_MIGRATE_UPLOADS:-}" == "1" ]]; then
   LOCAL_UPLOADS="$ROOT/server/uploads"
   if [[ ! -d "$LOCAL_UPLOADS" ]] || [[ -z "$(find "$LOCAL_UPLOADS" -type f ! -name '.gitkeep' 2>/dev/null | head -1)" ]]; then

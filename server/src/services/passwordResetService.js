@@ -12,6 +12,12 @@ const RATE_LIMIT_MAX = 5;
 const GENERIC_MESSAGE =
   "If an account exists for that email, a password reset link has been sent.";
 
+const MAIL_NOT_CONFIGURED_MESSAGE =
+  "Password reset by email is not configured on this server. Ask an admin to reset your password (npm run user:reset-password).";
+
+const MAIL_SEND_FAILED_MESSAGE =
+  "Unable to send the password reset email right now. Try again later or ask an admin to reset your password.";
+
 /** @type {Map<string, number[]>} */
 const requestTimestampsByKey = new Map();
 
@@ -45,10 +51,17 @@ function serializeResetPreview(reset) {
 async function requestPasswordReset({ email, ip }) {
   const normalizedEmail = email.trim().toLowerCase();
   const key = rateLimitKey(normalizedEmail, ip);
+  const isTest = process.env.NODE_ENV === "test";
 
   if (isRateLimited(key)) {
     // Same generic response — do not reveal rate limiting to attackers via message text alone.
     return { message: GENERIC_MESSAGE };
+  }
+
+  // Outside tests, refuse to pretend a reset email was sent when mail is not wired up.
+  if (!isTest && !mailConfigured()) {
+    const err = Object.assign(new Error(MAIL_NOT_CONFIGURED_MESSAGE), { status: 503 });
+    throw err;
   }
 
   const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -94,8 +107,8 @@ async function requestPasswordReset({ email, ip }) {
       console.error("Password reset email failed:", err.message);
       emailResult = { error: err.message };
     }
-  } else {
-    console.warn(`Password reset created for ${user.email} but email is not configured.`);
+  } else if (isTest) {
+    emailResult = { skipped: true, reason: "test" };
   }
 
   await recordAudit({
@@ -106,11 +119,17 @@ async function requestPasswordReset({ email, ip }) {
     metadata: {
       email: user.email,
       emailSent: Boolean(emailResult.sent),
+      emailError: emailResult.error || null,
     },
   });
 
+  if (!isTest && mailConfigured() && !emailResult.sent) {
+    const err = Object.assign(new Error(MAIL_SEND_FAILED_MESSAGE), { status: 502 });
+    throw err;
+  }
+
   // Expose raw token only under Jest so tests can exercise the hashed-token flow.
-  if (process.env.NODE_ENV === "test") {
+  if (isTest) {
     return { message: GENERIC_MESSAGE, token };
   }
   return { message: GENERIC_MESSAGE };
@@ -191,5 +210,7 @@ module.exports = {
   getPasswordResetByToken,
   completePasswordReset,
   GENERIC_MESSAGE,
+  MAIL_NOT_CONFIGURED_MESSAGE,
+  MAIL_SEND_FAILED_MESSAGE,
   RESET_TTL_MS,
 };

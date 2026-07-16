@@ -21,13 +21,20 @@
     "app:stop": "bash scripts/stop-app.sh",
     "team:serve": "bash scripts/team-serve.sh",
     "team:connect": "bash scripts/team-connect.sh",
+    "team:disconnect": "bash scripts/team-disconnect.sh",
+    "team:status": "bash scripts/team-status.sh",
     "team:autostart": "bash scripts/install-team-autostart.sh",
     "team:autostart:off": "bash scripts/uninstall-team-autostart.sh",
     "package:team-client": "bash scripts/package-team-client.sh",
     "railway:migrate": "bash scripts/migrate-to-railway.sh",
+    "railway:sync-users": "node scripts/sync-users-to-railway.js",
     "railway:publish-mac": "bash scripts/publish-mac-to-railway.sh",
     "railway:publish-uploads": "bash scripts/publish-uploads-to-railway.sh",
-    "railway:bootstrap": "bash scripts/railway-bootstrap.sh"
+    "railway:bootstrap": "bash scripts/railway-bootstrap.sh",
+    "user:ensure": "node scripts/ensure-user.js",
+    "user:ensure:local": "node scripts/ensure-user.js --local",
+    "user:reset-password": "node scripts/reset-password.js",
+    "user:reset-link": "node scripts/issue-password-reset-link.js"
   },
   "workspaces": [
     "client",

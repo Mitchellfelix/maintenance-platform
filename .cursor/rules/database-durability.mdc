@@ -13,6 +13,10 @@ EMAT user data (sites, assets, work orders, users) must persist. Treat `maintena
 - Call `resetDatabase()`, `deleteMany` across core tables, `prisma migrate reset`, or `db:push` on the live DB
 - Run `docker compose down -v` or delete the `maintenance_platform_pgdata` volume
 - Fall back from `.env.test` to `.env` for test `DATABASE_URL`
+- Point the desktop at Railway/team (`team:connect` / `EMAT_APP_URL`) before migrate when the remote DB is empty — that does **not** erase local data but looks like a wipe (wrong database)
+- Create/reset production passwords or users on Railway unless the user explicitly asked for that account action
+- Run `railway:migrate` when Railway already has more data than local — full migrate **replaces** Railway and destroys accounts
+- Call `reset-password.js` for an email that already works; use `ensure-user.js` (create-only) instead when the goal is “make sure the account exists”
 
 ## Always do
 
@@ -20,8 +24,15 @@ EMAT user data (sites, assets, work orders, users) must persist. Treat `maintena
 - Prefer `npm run db:backup` and `npm run db:deploy:safe` before schema changes
 - If data must change in bulk, take a backup first and confirm the target DB name
 - After any incident, verify row counts (`site`, `asset`, `user`) before continuing
+- Before `team:connect`, run `npm run team:status` and `railway:migrate` / `railway:sync-users` so remote has users/data; never force-connect an empty remote without `EMAT_FORCE_TEAM_CONNECT=YES` and clear user intent
+- Treat local Docker Postgres and Railway Postgres as **two separate databases** — switching `EMAT_APP_URL` only changes which one the UI opens
+- Prefer `npm run railway:sync-users` (skip existing) over full migrate when you only need accounts on Railway
+- Once a Railway account exists, leave it alone across launches — passwords persist in Postgres; do not recreate them each session
 
 ## Recovery
 
 - `npm run db:backup` → writes `backups/emat-*.sql.gz`
 - `EMAT_CONFIRM_RESTORE=YES npm run db:restore -- --latest` (or a specific file)
+- `npm run team:disconnect` → return this Mac to local solo mode (does not delete Railway)
+- `npm run team:status` → show current mode + local/remote counts
+- `npm run user:ensure` / `scripts/ensure-user.js` → create missing user only (never overwrites password)

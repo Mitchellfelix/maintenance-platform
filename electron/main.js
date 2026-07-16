@@ -134,6 +134,48 @@ function startHealthWatch() {
   }, WATCH_INTERVAL_MS);
 }
 
+function modeNoticePath() {
+  return path.join(app.getPath("userData"), "emat-mode-notice.json");
+}
+
+function maybeWarnRemoteMode(appUrl) {
+  if (isLocalMode) {
+    return;
+  }
+
+  let seen = {};
+  try {
+    seen = JSON.parse(fs.readFileSync(modeNoticePath(), "utf8"));
+  } catch {
+    seen = {};
+  }
+
+  if (seen[appUrl]) {
+    return;
+  }
+
+  dialog.showMessageBoxSync({
+    type: "warning",
+    title: APP_NAME,
+    message: "Team / Railway mode",
+    detail:
+      `This desktop app is opening:\n${appUrl}\n\n` +
+      "That is a different database from local solo mode on this Mac.\n" +
+      "Login accounts and data may look missing until you migrate or use Join.\n\n" +
+      "Check mode anytime: npm run team:status\n" +
+      "Return to local: npm run team:disconnect",
+    buttons: ["Got it"],
+    defaultId: 0,
+  });
+
+  seen[appUrl] = new Date().toISOString();
+  try {
+    fs.writeFileSync(modeNoticePath(), JSON.stringify(seen, null, 2));
+  } catch {
+    // non-fatal
+  }
+}
+
 function stopHealthWatch() {
   if (healthTimer) {
     clearInterval(healthTimer);
@@ -236,6 +278,8 @@ async function boot() {
     app.quit();
     return;
   }
+
+  maybeWarnRemoteMode(appUrl);
 
   if (!mainWindow) {
     createWindow(loadUrl);

@@ -22,7 +22,10 @@ railway link          # after creating the project + Postgres in the dashboard
 
 railway up
 EMAT_CONFIRM_MIGRATE=YES npm run railway:migrate
+npm run team:status          # confirm Railway has users/data BEFORE pointing the Mac app at it
 npm run railway:publish-mac
+# Only after migrate looks right:
+npm run team:connect -- https://YOUR-APP.up.railway.app
 ```
 
 Send your team:

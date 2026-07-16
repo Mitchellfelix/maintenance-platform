@@ -41,8 +41,9 @@ export default function ForgotPasswordPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-400">EMAT</p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">Forgot password</h1>
         <p className="mt-2 text-sm text-slate-300">
-          Enter your email and we&apos;ll send a reset link if an active account exists. Mail must be
-          configured on the server.
+          Enter your email and we&apos;ll send a reset link if an active account exists. If mail isn&apos;t
+          working on the server, you&apos;ll see an error instead of a fake success — ask an admin to run{" "}
+          <code className="text-orange-200">npm run user:reset-link -- --railway you@company.com</code>.
         </p>
         <ErrorBanner message={error} />
         {success ? (

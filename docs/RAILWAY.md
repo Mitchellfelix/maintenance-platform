@@ -72,6 +72,20 @@ Or set the URL explicitly:
 EMAT_CONFIRM_MIGRATE=YES RAILWAY_DATABASE_URL='postgresql://…' npm run railway:migrate
 ```
 
+Then verify before pointing the desktop app at Railway:
+
+```bash
+npm run team:status
+# Prefer non-destructive account copy when Railway already has data:
+npm run railway:sync-users
+# Only after remote counts look right (users/data present):
+npm run team:connect -- https://YOUR-APP.up.railway.app
+```
+
+`team:connect` refuses if the remote looks empty while this Mac still has local users/data (override only with `EMAT_FORCE_TEAM_CONNECT=YES`). Switching modes does **not** copy or erase databases — migrate does a full replace; `railway:sync-users` only adds missing accounts and never changes existing passwords.
+
+**Accounts persist** in Railway Postgres across deploys and app launches. Do not re-run password resets each session; use `npm run user:ensure` only to create a missing user.
+
 ### 5. Publish Mac download
 
 ```bash
@@ -121,6 +135,8 @@ curl -fsSL "https://YOUR-APP.up.railway.app/install-mac" | bash
 
 - Turn off laptop hosting: `npm run team:autostart:off`
 - Stop local stack if unused: `docker compose --profile team down` (do **not** use `-v`)
+- Check mode anytime: `npm run team:status`
+- Back to solo Mac DB: `npm run team:disconnect`
 - Redeploying the web service keeps `/data` (uploads + Mac zip) when the volume is attached
 
 ## Troubleshooting
@@ -131,3 +147,6 @@ curl -fsSL "https://YOUR-APP.up.railway.app/install-mac" | bash
 | `/join` works but Mac download missing | `npm run railway:publish-mac` |
 | Photos missing after migrate | `npm run railway:publish-uploads` |
 | Wrong Team URL in Mac app | Ensure `EMAT_APP_URL` matches the public HTTPS domain |
+| Login “Invalid credentials” after connect | Remote DB is different — migrate/sync users first or Join on Railway; local password does not apply |
+| App looks empty after connect | Wrong database, not a wipe — `npm run team:status`; migrate or `team:disconnect` |
+| Forgot password says sent but nothing arrives | Resend/SMTP failing or restricted — UI should now show a real error; ops: `npm run user:reset-link -- --railway you@company.com` or `npm run user:reset-password -- --railway you@company.com 'NewPass123'` |
