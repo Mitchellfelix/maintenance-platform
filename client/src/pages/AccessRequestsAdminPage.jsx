@@ -30,12 +30,9 @@ export default function AccessRequestsAdminPage() {
     setError("");
     try {
       const query = filter ? `?status=${filter}` : "";
-      const [requestsResponse, sitesResponse] = await Promise.all([
-        api.get(`/api/access-requests${query}`),
-        api.get("/api/sites"),
-      ]);
+      // Load requests independently — a sites failure must not blank the queue.
+      const requestsResponse = await api.get(`/api/access-requests${query}`);
       setRequests(requestsResponse.data);
-      setSites(sitesResponse.data);
       setReviewDrafts(
         Object.fromEntries(
           requestsResponse.data
@@ -43,8 +40,22 @@ export default function AccessRequestsAdminPage() {
             .map((entry) => [entry.id, buildReviewDraft(entry)]),
         ),
       );
+
+      try {
+        const sitesResponse = await api.get("/api/sites");
+        setSites(sitesResponse.data);
+      } catch (sitesErr) {
+        setSites([]);
+        setError(
+          getErrorMessage(
+            sitesErr,
+            "Access requests loaded, but sites could not be loaded for assignment.",
+          ),
+        );
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load access requests"));
+      setRequests([]);
     } finally {
       setLoading(false);
     }

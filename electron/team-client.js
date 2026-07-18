@@ -118,6 +118,39 @@ function writeConfig(next) {
   return config;
 }
 
+function isLanOrLocalHost(url) {
+  try {
+    const host = new URL(String(url || "").trim()).hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+    if (/^10\.\d+\.\d+\.\d+$/.test(host)) return true;
+    if (/^192\.168\.\d+\.\d+$/.test(host)) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(host)) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function healStaleTeamConfig() {
+  const defaults = readPackagedDefaults();
+  if (!defaults?.teamUrl || !/^https:\/\//i.test(defaults.teamUrl)) {
+    return false;
+  }
+
+  // Common after LAN→Railway: packaged app still stuck in offline / old LAN Team URL.
+  const staleOffline = config.mode === "offline";
+  const staleLanUrl = Boolean(config.teamUrl) && isLanOrLocalHost(config.teamUrl);
+  if (!staleOffline && !staleLanUrl) {
+    return false;
+  }
+
+  writeConfig({
+    mode: "online",
+    teamUrl: defaults.teamUrl,
+  });
+  return true;
+}
+
 function resolveProjectRoot() {
   const marker = path.join(app.getPath("home"), ".emat", "home");
   if (fs.existsSync(marker)) {
@@ -295,6 +328,11 @@ async function boot() {
       writeConfig({ mode: defaults.mode || "online", teamUrl: defaults.teamUrl });
       config = readConfig();
     }
+  }
+
+  // Repair stuck offline/LAN configs left over from before Railway go-live.
+  if (healStaleTeamConfig()) {
+    config = readConfig();
   }
 
   if (!config.mode) {

@@ -73,6 +73,12 @@ iconutil -c icns "$ICONSET" -o "$WORK_DIR/AppIcon.icns"
 
 mkdir -p "$APP_PATH/Contents/Resources"
 cp "$WORK_DIR/AppIcon.icns" "$APP_PATH/Contents/Resources/AppIcon.icns"
+# Packaged Electron team builds look for electron.icns (CFBundleIconFile).
+cp "$WORK_DIR/AppIcon.icns" "$APP_PATH/Contents/Resources/electron.icns"
+
+# Also keep a copy for electron-builder packaging.
+mkdir -p "$ROOT/electron/build"
+cp "$WORK_DIR/AppIcon.icns" "$ROOT/electron/build/icon.icns"
 
 # Refresh Finder icon cache for this app
 touch "$APP_PATH"

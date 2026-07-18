@@ -17,6 +17,15 @@ if [[ ! -d node_modules/electron-builder ]]; then
   npm install
 fi
 
+# Ensure the custom Dock icon is baked into electron-builder output.
+if [[ ! -f "$ELECTRON_DIR/build/icon.icns" ]]; then
+  echo "Building app icon for packaging..."
+  bash "$ROOT/scripts/set-app-icon.sh" "$ROOT/apps/EMAT Tracking Database.app" || true
+fi
+if [[ ! -f "$ELECTRON_DIR/build/icon.icns" ]]; then
+  echo "WARNING: electron/build/icon.icns missing — package may use the default Electron icon."
+fi
+
 echo "Packaging Mac team client..."
 npm run pack
 
