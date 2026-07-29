@@ -11,7 +11,8 @@ import { REGISTRATION_ROLES, getRoleLabel, isSiteScopedRole } from "../lib/permi
 function buildReviewDraft(request) {
   return {
     requestedRole: request.requestedRole,
-    requestedSiteIds: request.requestedSiteIds || [],
+    requestedSiteIds: Array.isArray(request.requestedSiteIds) ? request.requestedSiteIds : [],
+    reviewNote: "",
   };
 }
 
@@ -93,16 +94,24 @@ export default function AccessRequestsAdminPage() {
   }
 
   async function handleReview(requestId, action) {
-    const reviewNote = window.prompt(
-      action === "approve" ? "Approval note (optional)" : "Rejection reason (optional)",
-    );
-    if (reviewNote === null) return;
-
     const draft = reviewDrafts[requestId];
+    // Do not use window.prompt — Electron returns null immediately, so Approve/Reject look broken.
+    const reviewNote = (draft?.reviewNote || "").trim() || undefined;
+
+    if (
+      action === "approve" &&
+      draft &&
+      isSiteScopedRole(draft.requestedRole) &&
+      (draft.requestedSiteIds?.length ?? 0) === 0
+    ) {
+      setError("Select at least one site before approving Ops Lead or Operator access.");
+      return;
+    }
+
     setActingId(requestId);
     setError("");
     try {
-      const payload = { reviewNote: reviewNote.trim() || undefined };
+      const payload = { reviewNote };
       if (action === "approve" && draft) {
         payload.requestedRole = draft.requestedRole;
         if (isSiteScopedRole(draft.requestedRole)) {
@@ -239,7 +248,22 @@ export default function AccessRequestsAdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         {isPending ? (
-                          <div className="flex flex-col gap-2">
+                          <div className="flex min-w-[10rem] flex-col gap-2">
+                            <input
+                              type="text"
+                              value={draft?.reviewNote || ""}
+                              disabled={actingId === entry.id || !draft}
+                              onChange={(event) =>
+                                updateReviewDraft(entry.id, { reviewNote: event.target.value })
+                              }
+                              placeholder="Note (optional)"
+                              className="rounded-xl border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
+                            />
+                            {draft &&
+                            isSiteScopedRole(draft.requestedRole) &&
+                            (draft.requestedSiteIds?.length ?? 0) === 0 ? (
+                              <p className="text-xs text-amber-300">Select at least one site to approve.</p>
+                            ) : null}
                             <button
                               type="button"
                               onClick={() => handleReview(entry.id, "approve")}
@@ -251,13 +275,13 @@ export default function AccessRequestsAdminPage() {
                               }
                               className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                             >
-                              Approve
+                              {actingId === entry.id ? "Working…" : "Approve"}
                             </button>
                             <button
                               type="button"
                               onClick={() => handleReview(entry.id, "reject")}
                               disabled={actingId === entry.id}
-                              className="rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 disabled:opacity-60"
+                              className="rounded-xl border border-rose-300/60 px-3 py-1.5 text-xs font-medium text-rose-300 disabled:opacity-60"
                             >
                               Reject
                             </button>

@@ -187,6 +187,17 @@ function pingHealth(baseUrl, timeoutMs = 4000) {
   });
 }
 
+/** Railway edge / laptop networks can refuse one TCP connect, then succeed on retry. */
+async function pingHealthReliable(baseUrl, attempts = 4, timeoutMs = 6000) {
+  for (let i = 0; i < attempts; i += 1) {
+    if (await pingHealth(baseUrl, timeoutMs)) {
+      return true;
+    }
+    await new Promise((r) => setTimeout(r, 500 * (i + 1)));
+  }
+  return false;
+}
+
 function waitForHealth(baseUrl, attempts = 60) {
   return new Promise((resolve, reject) => {
     let tries = 0;
@@ -293,7 +304,7 @@ async function bootOnline() {
     return;
   }
 
-  const ok = await pingHealth(url);
+  const ok = await pingHealthReliable(url);
   if (!ok) {
     const result = dialog.showMessageBoxSync(mainWindow || undefined, {
       type: "warning",
@@ -303,7 +314,7 @@ async function bootOnline() {
       title: APP_NAME,
       message: "Team server not reachable",
       detail: `${url} looks offline. You can keep trying, change the URL, or work offline (local DB) until sync.`,
-    });
+      });
     if (result === 1) {
       showSetup();
       return;
