@@ -20,12 +20,12 @@ describe("workOrderAccess", () => {
     expect(canEditWorkOrder({ id: "other-operator", role: "OPERATOR" }, workOrder)).toBe(false);
   });
 
-  it("limits requester updates to title and description (not assign)", () => {
+  it("limits requester updates to title, description, and asset", () => {
     const filtered = filterWorkOrderUpdate(
       { role: "REQUESTER" },
-      { title: "New title", status: "COMPLETED", assigneeId: "x" },
+      { title: "New title", status: "COMPLETED", assigneeId: "x", assetId: "asset-1" },
     );
-    expect(filtered).toEqual({ title: "New title" });
+    expect(filtered).toEqual({ title: "New title", assetId: "asset-1" });
   });
 });
 

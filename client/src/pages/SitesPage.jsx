@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api, getErrorMessage } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
@@ -8,6 +8,7 @@ import LoadingState from "../components/LoadingState.jsx";
 import PageHeader, { EmptyState, RecordLink } from "../components/PageHeader.jsx";
 
 export default function SitesPage() {
+  const navigate = useNavigate();
   const { isAuthenticated, can } = useAuth();
   const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,8 +42,13 @@ export default function SitesPage() {
     setSubmitting(true);
     setError("");
     try {
-      await api.post("/api/sites", form);
+      const response = await api.post("/api/sites", form);
+      const created = response.data;
       setForm({ name: "", address: "" });
+      if (created?.id) {
+        navigate(`/sites/${created.id}`);
+        return;
+      }
       await loadSites();
     } catch (err) {
       setError(getErrorMessage(err, "Unable to create site"));

@@ -50,7 +50,11 @@ async function createAccessRequest(requester, data) {
     data: {
       requesterId: requester.id,
       requestedRole: data.requestedRole,
-      requestedSiteIds: isSiteScopedRole(data.requestedRole) ? data.requestedSiteIds : null,
+      requestedSiteIds: isSiteScopedRole(data.requestedRole)
+        ? data.requestedSiteIds?.length
+          ? data.requestedSiteIds
+          : []
+        : null,
       reason: data.reason || null,
     },
     include: requestInclude,

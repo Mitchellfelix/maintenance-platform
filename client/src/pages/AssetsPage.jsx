@@ -41,9 +41,6 @@ export default function AssetsPage() {
       ]);
       setAssets(assetsResponse.data);
       setSites(sitesResponse.data);
-      if (!form.siteId && sitesResponse.data[0]) {
-        setForm((current) => ({ ...current, siteId: sitesResponse.data[0].id }));
-      }
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load assets"));
     } finally {
@@ -70,7 +67,7 @@ export default function AssetsPage() {
         serialNumber: form.serialNumber || undefined,
       };
       await api.post("/api/assets", payload);
-      setForm((current) => ({ ...emptyForm, siteId: current.siteId }));
+      setForm(emptyForm);
       await loadData();
     } catch (err) {
       setError(getErrorMessage(err, "Unable to create asset"));
@@ -105,7 +102,10 @@ export default function AssetsPage() {
             as="select"
             value={form.siteId}
             onChange={updateField}
-            options={sites.map((site) => ({ value: site.id, label: site.name }))}
+            options={[
+              { value: "", label: "Select a site…" },
+              ...sites.map((site) => ({ value: site.id, label: site.name })),
+            ]}
             required
           />
           <FormField label="Asset name" name="name" value={form.name} onChange={updateField} required />

@@ -39,6 +39,7 @@ router.get("/api", (req, res) => {
       "/api/health/db",
       "/api/version",
       "/api/auth/register",
+      "/api/auth/registration-sites",
       "/api/auth/login",
       "/api/auth/me",
       "/api/auth/password-reset",

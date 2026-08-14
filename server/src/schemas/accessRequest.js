@@ -3,21 +3,12 @@ const { ROLES, isSiteScopedRole } = require("../lib/permissions");
 
 const REQUESTABLE_ROLES = ROLES.filter((role) => role !== "ADMIN" && role !== "REQUESTER");
 
-const createAccessRequestSchema = z
-  .object({
-    requestedRole: z.enum(REQUESTABLE_ROLES),
-    requestedSiteIds: z.array(z.string().min(1)).optional(),
-    reason: z.string().trim().min(1).max(1000).optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (isSiteScopedRole(data.requestedRole) && (!data.requestedSiteIds || data.requestedSiteIds.length === 0)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "At least one site is required for Ops Lead or Operator access",
-        path: ["requestedSiteIds"],
-      });
-    }
-  });
+// Sites are optional at request time; admins assign them when approving.
+const createAccessRequestSchema = z.object({
+  requestedRole: z.enum(REQUESTABLE_ROLES),
+  requestedSiteIds: z.array(z.string().min(1)).optional(),
+  reason: z.string().trim().min(1).max(1000).optional(),
+});
 
 const REGISTRATION_ROLES = ROLES.filter((role) => role !== "ADMIN");
 

@@ -8,12 +8,28 @@ import RoleSelect from "../components/RoleSelect.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { REGISTRATION_ROLES, getRoleLabel, isSiteScopedRole } from "../lib/permissions.js";
 
-function buildReviewDraft(request) {
+function buildReviewDraft(request, allSites = []) {
+  const requestedRole = request.requestedRole;
+  let requestedSiteIds = Array.isArray(request.requestedSiteIds) ? [...request.requestedSiteIds] : [];
+
+  // One-click approve: if Ops Lead / Operator has no sites yet and the org has exactly one, pre-select it.
+  if (isSiteScopedRole(requestedRole) && requestedSiteIds.length === 0 && allSites.length === 1) {
+    requestedSiteIds = [allSites[0].id];
+  }
+
   return {
-    requestedRole: request.requestedRole,
-    requestedSiteIds: Array.isArray(request.requestedSiteIds) ? request.requestedSiteIds : [],
+    requestedRole,
+    requestedSiteIds,
     reviewNote: "",
   };
+}
+
+/** Resolve sites for approval; auto-picks the only org site when none were chosen. */
+function resolveApprovalSiteIds(draft, allSites) {
+  if (!draft || !isSiteScopedRole(draft.requestedRole)) return [];
+  if (draft.requestedSiteIds?.length) return draft.requestedSiteIds;
+  if (allSites.length === 1) return [allSites[0].id];
+  return [];
 }
 
 export default function AccessRequestsAdminPage() {
@@ -34,26 +50,34 @@ export default function AccessRequestsAdminPage() {
       // Load requests independently — a sites failure must not blank the queue.
       const requestsResponse = await api.get(`/api/access-requests${query}`);
       setRequests(requestsResponse.data);
+
+      let loadedSites = [];
+      try {
+        // Prefer the full org site list for assignment (not the reviewer's scoped /api/sites).
+        const sitesResponse = await api.get("/api/auth/registration-sites");
+        loadedSites = Array.isArray(sitesResponse.data) ? sitesResponse.data : [];
+      } catch (sitesErr) {
+        try {
+          const fallback = await api.get("/api/sites");
+          loadedSites = Array.isArray(fallback.data) ? fallback.data : [];
+        } catch {
+          loadedSites = [];
+          setError(
+            getErrorMessage(
+              sitesErr,
+              "Access requests loaded, but sites could not be loaded for assignment.",
+            ),
+          );
+        }
+      }
+      setSites(loadedSites);
       setReviewDrafts(
         Object.fromEntries(
           requestsResponse.data
             .filter((entry) => entry.status === "PENDING")
-            .map((entry) => [entry.id, buildReviewDraft(entry)]),
+            .map((entry) => [entry.id, buildReviewDraft(entry, loadedSites)]),
         ),
       );
-
-      try {
-        const sitesResponse = await api.get("/api/sites");
-        setSites(sitesResponse.data);
-      } catch (sitesErr) {
-        setSites([]);
-        setError(
-          getErrorMessage(
-            sitesErr,
-            "Access requests loaded, but sites could not be loaded for assignment.",
-          ),
-        );
-      }
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load access requests"));
       setRequests([]);
@@ -97,15 +121,27 @@ export default function AccessRequestsAdminPage() {
     const draft = reviewDrafts[requestId];
     // Do not use window.prompt — Electron returns null immediately, so Approve/Reject look broken.
     const reviewNote = (draft?.reviewNote || "").trim() || undefined;
+    const approvalSiteIds =
+      action === "approve" ? resolveApprovalSiteIds(draft, sites) : [];
 
+    if (action === "approve" && draft && isSiteScopedRole(draft.requestedRole) && approvalSiteIds.length === 0) {
+      setError(
+        sites.length === 0
+          ? "Create a site first, then approve Ops Lead or Operator access."
+          : "Select at least one site before approving Ops Lead or Operator access.",
+      );
+      return;
+    }
+
+    // Keep the draft in sync when we auto-picked the sole site on Approve.
     if (
       action === "approve" &&
       draft &&
       isSiteScopedRole(draft.requestedRole) &&
-      (draft.requestedSiteIds?.length ?? 0) === 0
+      !(draft.requestedSiteIds?.length) &&
+      approvalSiteIds.length > 0
     ) {
-      setError("Select at least one site before approving Ops Lead or Operator access.");
-      return;
+      updateReviewDraft(requestId, { requestedSiteIds: approvalSiteIds });
     }
 
     setActingId(requestId);
@@ -115,7 +151,7 @@ export default function AccessRequestsAdminPage() {
       if (action === "approve" && draft) {
         payload.requestedRole = draft.requestedRole;
         if (isSiteScopedRole(draft.requestedRole)) {
-          payload.requestedSiteIds = draft.requestedSiteIds;
+          payload.requestedSiteIds = approvalSiteIds;
         }
       }
 
@@ -202,13 +238,17 @@ export default function AccessRequestsAdminPage() {
                           <RoleSelect
                             name={`approve-role-${entry.id}`}
                             value={draft.requestedRole}
-                            onChange={(event) =>
+                            onChange={(event) => {
+                              const nextRole = event.target.value;
+                              let nextSites = isSiteScopedRole(nextRole) ? draft.requestedSiteIds : [];
+                              if (isSiteScopedRole(nextRole) && nextSites.length === 0 && sites.length === 1) {
+                                nextSites = [sites[0].id];
+                              }
                               updateReviewDraft(entry.id, {
-                                requestedRole: event.target.value,
-                                requestedSiteIds:
-                                  isSiteScopedRole(event.target.value) ? draft.requestedSiteIds : [],
-                              })
-                            }
+                                requestedRole: nextRole,
+                                requestedSiteIds: nextSites,
+                              });
+                            }}
                             roles={REGISTRATION_ROLES}
                             disabled={actingId === entry.id}
                           />
@@ -218,23 +258,9 @@ export default function AccessRequestsAdminPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-300">
                         {isPending && draft && isSiteScopedRole(draft.requestedRole) ? (
-                          <div className="flex flex-col gap-2">
-                            {sites.length === 0 ? (
-                              <span className="text-slate-400">No sites available</span>
-                            ) : (
-                              sites.map((site) => (
-                                <label key={site.id} className="flex items-center gap-2 text-slate-200">
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.requestedSiteIds.includes(site.id)}
-                                    disabled={actingId === entry.id}
-                                    onChange={() => toggleReviewSite(entry.id, site.id)}
-                                  />
-                                  {site.name}
-                                </label>
-                              ))
-                            )}
-                          </div>
+                          draft.requestedSiteIds?.length
+                            ? siteNames(draft.requestedSiteIds)
+                            : <span className="text-slate-400">Assign in Actions →</span>
                         ) : (
                           siteNames(entry.requestedSiteIds)
                         )}
@@ -248,7 +274,43 @@ export default function AccessRequestsAdminPage() {
                       </td>
                       <td className="px-4 py-3">
                         {isPending ? (
-                          <div className="flex min-w-[10rem] flex-col gap-2">
+                          <div className="flex min-w-[12rem] flex-col gap-2">
+                            {draft && isSiteScopedRole(draft.requestedRole) ? (
+                              <div className="rounded-xl border border-slate-600 bg-slate-950/50 p-2">
+                                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                  Assign sites
+                                </p>
+                                {sites.length === 0 ? (
+                                  <p className="text-xs text-amber-300">
+                                    No sites in the system yet. Create a site first, or approve as Requester.
+                                  </p>
+                                ) : (
+                                  <div className="flex max-h-36 flex-col gap-1.5 overflow-y-auto">
+                                    {sites.map((site) => (
+                                      <label
+                                        key={site.id}
+                                        className="flex items-center gap-2 text-xs text-slate-200"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.requestedSiteIds.includes(site.id)}
+                                          disabled={actingId === entry.id}
+                                          onChange={() => toggleReviewSite(entry.id, site.id)}
+                                        />
+                                        {site.name}
+                                      </label>
+                                    ))}
+                                  </div>
+                                )}
+                                {(draft.requestedSiteIds?.length ?? 0) === 0 ? (
+                                  <p className="mt-1.5 text-xs text-amber-300">
+                                    {sites.length === 1
+                                      ? "Will assign the only site automatically on Approve."
+                                      : "Check at least one site, then Approve."}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ) : null}
                             <input
                               type="text"
                               value={draft?.reviewNote || ""}
@@ -259,20 +321,10 @@ export default function AccessRequestsAdminPage() {
                               placeholder="Note (optional)"
                               className="rounded-xl border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs text-slate-100 placeholder:text-slate-500"
                             />
-                            {draft &&
-                            isSiteScopedRole(draft.requestedRole) &&
-                            (draft.requestedSiteIds?.length ?? 0) === 0 ? (
-                              <p className="text-xs text-amber-300">Select at least one site to approve.</p>
-                            ) : null}
                             <button
                               type="button"
                               onClick={() => handleReview(entry.id, "approve")}
-                              disabled={
-                                actingId === entry.id ||
-                                !draft ||
-                                (isSiteScopedRole(draft.requestedRole) &&
-                                  (draft.requestedSiteIds?.length ?? 0) === 0)
-                              }
+                              disabled={actingId === entry.id || !draft}
                               className="rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                             >
                               {actingId === entry.id ? "Working…" : "Approve"}

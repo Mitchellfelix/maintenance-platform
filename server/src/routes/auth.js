@@ -2,6 +2,7 @@ const { Router } = require("express");
 const auth = require("../middleware/auth");
 const validate = require("../middleware/validate");
 const { createRateLimiter } = require("../middleware/rateLimit");
+const prisma = require("../lib/prisma");
 const {
   registerSchema,
   loginSchema,
@@ -23,6 +24,19 @@ const authAttemptLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: "Too many auth attempts. Try again later.",
+});
+
+/** Public read-only site list for unauthenticated access requests (id + name only). */
+router.get("/registration-sites", async (req, res, next) => {
+  try {
+    const sites = await prisma.site.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+    res.json(sites);
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.post("/register", authAttemptLimiter, validate(registerSchema), async (req, res, next) => {

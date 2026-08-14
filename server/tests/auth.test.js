@@ -3,6 +3,7 @@ const {
   describeIfDb,
   getApp,
   registerUser,
+  createSite,
   setupDbHooks,
   authHeader,
 } = require("./helpers");
@@ -15,6 +16,26 @@ describeIfDb("auth routes", () => {
   });
 
   setupDbHooks();
+
+  it("lists registration sites without auth", async () => {
+    const { response: adminResponse } = await registerUser(app, { role: "ADMIN" });
+    const { response: siteA } = await createSite(app, adminResponse.body.token, {
+      name: "Zeta Plant",
+    });
+    const { response: siteB } = await createSite(app, adminResponse.body.token, {
+      name: "Alpha Plant",
+    });
+
+    const unauthSites = await request(app).get("/api/sites");
+    expect(unauthSites.status).toBe(401);
+
+    const response = await request(app).get("/api/auth/registration-sites");
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([
+      { id: siteB.body.id, name: "Alpha Plant" },
+      { id: siteA.body.id, name: "Zeta Plant" },
+    ]);
+  });
 
   it("registers a user and returns a token when tests activate the account", async () => {
     const { response } = await registerUser(app);

@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import FormField from "../components/FormField.jsx";
 import LoadingState from "../components/LoadingState.jsx";
-import PageHeader from "../components/PageHeader.jsx";
+import PageHeader, { RecordLink } from "../components/PageHeader.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { formatDate } from "../utils/labels.js";
 
@@ -110,6 +110,14 @@ export default function AssetDetailPage() {
         action={
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge value={asset.operationalStatus} />
+            {isAuthenticated && can("workorders:create") ? (
+              <Link
+                to={`/workorders?siteId=${asset.siteId}&assetId=${asset.id}`}
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Create work order
+              </Link>
+            ) : null}
             <Link
               to={`/greentagging?assetId=${asset.id}`}
               className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium"
@@ -208,6 +216,37 @@ export default function AssetDetailPage() {
           </section>
         )}
       </div>
+
+      <section className="mt-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold">Work orders</h3>
+          {isAuthenticated && can("workorders:create") ? (
+            <Link
+              to={`/workorders?siteId=${asset.siteId}&assetId=${asset.id}`}
+              className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200"
+            >
+              New work order
+            </Link>
+          ) : null}
+        </div>
+        {!asset.workOrders?.length ? (
+          <p className="mt-4 text-sm text-slate-400">No work orders for this asset yet.</p>
+        ) : (
+          <div className="mt-4 grid gap-3">
+            {[...(asset.workOrders || [])]
+              .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+              .map((order) => (
+              <RecordLink
+                key={order.id}
+                to={`/workorders/${order.id}`}
+                title={`${order.code} · ${order.title}`}
+                subtitle={order.priority ? `Priority: ${order.priority}` : undefined}
+                badge={order.status}
+              />
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="mt-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">

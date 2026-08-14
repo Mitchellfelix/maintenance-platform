@@ -56,7 +56,11 @@ async function register({
         data: {
           requesterId: created.id,
           requestedRole,
-          requestedSiteIds: isSiteScopedRole(requestedRole) ? requestedSiteIds : null,
+          requestedSiteIds: isSiteScopedRole(requestedRole)
+            ? requestedSiteIds?.length
+              ? requestedSiteIds
+              : []
+            : null,
           reason: reason || null,
         },
       });

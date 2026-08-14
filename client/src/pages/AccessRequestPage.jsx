@@ -135,10 +135,15 @@ export default function AccessRequestPage() {
 
           {isSiteScopedRole(form.requestedRole) ? (
             <div>
-              <p className="text-sm font-medium text-slate-200">Sites</p>
-              <div className="mt-2 space-y-2">
+              <p className="text-sm font-medium text-slate-200">Sites (optional)</p>
+              <p className="mt-1 text-xs text-slate-400">
+                Select preferred sites if you know them. An admin can assign sites when approving.
+              </p>
+              <div className="mt-2 max-h-48 space-y-2 overflow-y-auto overscroll-contain rounded-xl border border-slate-700 bg-slate-950/40 p-3">
                 {sites.length === 0 ? (
-                  <p className="text-sm text-slate-400">No sites available yet.</p>
+                  <p className="text-sm text-slate-400">
+                    No sites listed yet — you can still submit. An admin will assign sites on approval.
+                  </p>
                 ) : (
                   sites.map((site) => (
                     <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
@@ -169,7 +174,7 @@ export default function AccessRequestPage() {
 
           <button
             type="submit"
-            disabled={submitting || (isSiteScopedRole(form.requestedRole) && form.requestedSiteIds.length === 0)}
+            disabled={submitting}
             className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
             {submitting ? "Submitting..." : "Submit request"}

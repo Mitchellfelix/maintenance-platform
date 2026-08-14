@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import FormField from "../components/FormField.jsx";
 import LoadingState from "../components/LoadingState.jsx";
-import PageHeader from "../components/PageHeader.jsx";
+import PageHeader, { RecordLink } from "../components/PageHeader.jsx";
 
 export default function SiteDetailPage() {
   const { id } = useParams();
@@ -75,9 +75,19 @@ export default function SiteDetailPage() {
         title={site.name}
         description={site.address || "No address provided"}
         action={
-          <Link to="/sites" className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium">
-            Back to sites
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            {isAuthenticated && can("workorders:create") ? (
+              <Link
+                to={`/workorders?siteId=${site.id}`}
+                className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Create work order
+              </Link>
+            ) : null}
+            <Link to="/sites" className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium">
+              Back to sites
+            </Link>
+          </div>
         }
       />
 
@@ -138,6 +148,36 @@ export default function SiteDetailPage() {
           </section>
         )}
       </div>
+
+      <section className="mt-6 rounded-3xl border border-slate-600 bg-slate-800/90 p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold">Work orders</h3>
+          {isAuthenticated && can("workorders:create") ? (
+            <Link
+              to={`/workorders?siteId=${site.id}`}
+              className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-medium text-slate-200"
+            >
+              New work order
+            </Link>
+          ) : null}
+        </div>
+        {!site.workOrders?.length ? (
+          <p className="mt-4 text-sm text-slate-400">No work orders for this site yet.</p>
+        ) : (
+          <div className="mt-4 grid gap-3">
+            {[...(site.workOrders || [])]
+              .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+              .map((order) => (
+                <RecordLink
+                  key={order.id}
+                  to={`/workorders/${order.id}`}
+                  title={`${order.code} · ${order.title}`}
+                  badge={order.status}
+                />
+              ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

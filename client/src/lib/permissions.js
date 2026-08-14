@@ -128,7 +128,7 @@ export function getWorkOrderFieldAccess(role) {
       status: false,
       priority: false,
       siteId: false,
-      assetId: false,
+      assetId: true,
       assigneeId: true,
     };
   }

@@ -28,6 +28,7 @@ function filterWorkOrderUpdate(user, updates) {
     const allowed = {};
     if (data.title !== undefined) allowed.title = data.title;
     if (data.description !== undefined) allowed.description = data.description;
+    if (updates.assetId !== undefined) allowed.assetId = updates.assetId;
     if (data.assigneeId !== undefined && hasPermission(user.role, "workorders:assign")) {
       allowed.assigneeId = data.assigneeId;
     }
