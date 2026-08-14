@@ -134,6 +134,34 @@ async function cancelAccessRequest(requester, requestId) {
   return serializeAccessRequest(request);
 }
 
+async function resolveApprovalSiteIds(finalRole, requestedSiteIds, existing) {
+  if (!isSiteScopedRole(finalRole)) return [];
+
+  const fromPayload = requestedSiteIds !== undefined;
+  let siteIds = fromPayload
+    ? requestedSiteIds || []
+    : Array.isArray(existing.requestedSiteIds)
+      ? existing.requestedSiteIds
+      : [];
+
+  if (siteIds.length > 0) {
+    await validateSiteIds(siteIds);
+    return siteIds;
+  }
+
+  // Fully automated approve: when no sites were chosen, assign every site in the org.
+  const allSites = await prisma.site.findMany({
+    select: { id: true },
+    orderBy: { name: "asc" },
+  });
+  if (allSites.length === 0) {
+    throw Object.assign(new Error("Create a site before approving Ops Lead or Operator access"), {
+      status: 400,
+    });
+  }
+  return allSites.map((site) => site.id);
+}
+
 async function approveAccessRequest(reviewer, requestId, { reviewNote, requestedRole, requestedSiteIds } = {}) {
   const existing = await prisma.accessRequest.findUnique({
     where: { id: requestId },
@@ -156,22 +184,7 @@ async function approveAccessRequest(reviewer, requestId, { reviewNote, requested
     throw Object.assign(new Error("Cannot assign this role"), { status: 403 });
   }
 
-  const siteIds = isSiteScopedRole(finalRole)
-    ? requestedSiteIds !== undefined
-      ? requestedSiteIds
-      : Array.isArray(existing.requestedSiteIds)
-        ? existing.requestedSiteIds
-        : []
-    : [];
-
-  if (isSiteScopedRole(finalRole)) {
-    await validateSiteIds(siteIds);
-    if (siteIds.length === 0) {
-      throw Object.assign(new Error("At least one site is required for Ops Lead or Operator access"), {
-        status: 400,
-      });
-    }
-  }
+  const siteIds = await resolveApprovalSiteIds(finalRole, requestedSiteIds, existing);
 
   const reviewedAt = new Date();
 

@@ -128,13 +128,14 @@ describeIfDb("access requests", () => {
     expect(updatedUser.role).toBe("REQUESTER");
   });
 
-  it("rejects approval when admin clears site assignments with an empty array", async () => {
+  it("auto-assigns all org sites when approve sends an empty site list", async () => {
     const { response: adminResponse } = await registerUser(app, { role: "ADMIN" });
     const adminToken = adminResponse.body.token;
     const site = await createSite(app, adminToken, { name: "East Plant" });
 
     const { response: requesterResponse } = await registerUser(app, { role: "REQUESTER" });
     const requesterToken = requesterResponse.body.token;
+    const requesterId = requesterResponse.body.user.id;
 
     const createResponse = await request(app)
       .post("/api/access-requests")
@@ -149,31 +150,39 @@ describeIfDb("access requests", () => {
       .set(authHeader(adminToken))
       .send({ requestedSiteIds: [] });
 
-    expect(approveResponse.status).toBe(400);
+    expect(approveResponse.status).toBe(200);
+    const siteAccess = await prisma.siteAccess.findMany({ where: { userId: requesterId } });
+    expect(siteAccess.map((row) => row.siteId)).toEqual([site.response.body.id]);
   });
 
-  it("rejects approval when admin sets a site-scoped role with zero sites", async () => {
+  it("auto-assigns all org sites when approving a site-scoped role with no site payload", async () => {
     const { response: adminResponse } = await registerUser(app, { role: "ADMIN" });
     const adminToken = adminResponse.body.token;
-    const site = await createSite(app, adminToken, { name: "Central Plant" });
+    const siteA = await createSite(app, adminToken, { name: "Central Plant" });
+    const siteB = await createSite(app, adminToken, { name: "Dock Plant" });
 
     const { response: requesterResponse } = await registerUser(app, { role: "REQUESTER" });
     const requesterToken = requesterResponse.body.token;
+    const requesterId = requesterResponse.body.user.id;
 
     const createResponse = await request(app)
       .post("/api/access-requests")
       .set(authHeader(requesterToken))
       .send({
         requestedRole: "OPERATOR",
-        requestedSiteIds: [site.response.body.id],
       });
 
     const approveResponse = await request(app)
       .patch(`/api/access-requests/${createResponse.body.id}/approve`)
       .set(authHeader(adminToken))
-      .send({ requestedRole: "OPS_LEAD", requestedSiteIds: [] });
+      .send({ requestedRole: "OPS_LEAD" });
 
-    expect(approveResponse.status).toBe(400);
+    expect(approveResponse.status).toBe(200);
+    const siteAccess = await prisma.siteAccess.findMany({ where: { userId: requesterId } });
+    expect(siteAccess).toHaveLength(2);
+    expect(siteAccess.map((row) => row.siteId).sort()).toEqual(
+      [siteA.response.body.id, siteB.response.body.id].sort(),
+    );
   });
 
   it("blocks operators from reviewing requests", async () => {

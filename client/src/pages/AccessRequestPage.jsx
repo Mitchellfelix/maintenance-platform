@@ -6,12 +6,16 @@ import LoadingState from "../components/LoadingState.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import RoleSelect from "../components/RoleSelect.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
-import { getRoleLabel, getSelectableElevationRoles, getDefaultElevationRole, isSiteScopedRole, ELEVATION_ROLES } from "../lib/permissions.js";
+import {
+  getRoleLabel,
+  getSelectableElevationRoles,
+  getDefaultElevationRole,
+  ELEVATION_ROLES,
+} from "../lib/permissions.js";
 
 export default function AccessRequestPage() {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
-  const [sites, setSites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -20,7 +24,6 @@ export default function AccessRequestPage() {
   const defaultRole = getDefaultElevationRole(user?.role);
   const [form, setForm] = useState({
     requestedRole: defaultRole,
-    requestedSiteIds: [],
     reason: "",
   });
 
@@ -28,12 +31,8 @@ export default function AccessRequestPage() {
     setLoading(true);
     setError("");
     try {
-      const [requestsResponse, sitesResponse] = await Promise.all([
-        api.get("/api/access-requests/mine"),
-        api.get("/api/sites"),
-      ]);
+      const requestsResponse = await api.get("/api/access-requests/mine");
       setRequests(requestsResponse.data);
-      setSites(sitesResponse.data);
     } catch (err) {
       setError(getErrorMessage(err, "Unable to load access requests"));
     } finally {
@@ -50,7 +49,6 @@ export default function AccessRequestPage() {
       setForm((current) => ({
         ...current,
         requestedRole: defaultRole,
-        requestedSiteIds: [],
       }));
     }
   }, [defaultRole, form.requestedRole, selectableRoles]);
@@ -59,20 +57,7 @@ export default function AccessRequestPage() {
 
   function updateField(event) {
     const { name, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === "requestedRole" && !isSiteScopedRole(value) ? { requestedSiteIds: [] } : {}),
-    }));
-  }
-
-  function toggleSite(siteId) {
-    setForm((current) => ({
-      ...current,
-      requestedSiteIds: current.requestedSiteIds.includes(siteId)
-        ? current.requestedSiteIds.filter((id) => id !== siteId)
-        : [...current.requestedSiteIds, siteId],
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
   async function handleSubmit(event) {
@@ -80,16 +65,11 @@ export default function AccessRequestPage() {
     setSubmitting(true);
     setError("");
     try {
-      const payload = {
+      await api.post("/api/access-requests", {
         requestedRole: form.requestedRole,
         reason: form.reason || undefined,
-      };
-      if (isSiteScopedRole(form.requestedRole)) {
-        payload.requestedSiteIds = form.requestedSiteIds;
-      }
-
-      await api.post("/api/access-requests", payload);
-      setForm({ requestedRole: defaultRole, requestedSiteIds: [], reason: "" });
+      });
+      setForm({ requestedRole: defaultRole, reason: "" });
       await loadData();
     } catch (err) {
       setError(getErrorMessage(err, "Unable to submit access request"));
@@ -115,7 +95,7 @@ export default function AccessRequestPage() {
     <div className="space-y-6">
       <PageHeader
         title="Request access"
-        description={`Submit a request for elevated access. Your current role is ${getRoleLabel(user?.role)}.`}
+        description={`Request a higher role. Your current role is ${getRoleLabel(user?.role)}. An admin assigns sites when they approve.`}
       />
       <ErrorBanner message={error} />
 
@@ -132,33 +112,6 @@ export default function AccessRequestPage() {
             roles={selectableRoles.length > 0 ? selectableRoles : ELEVATION_ROLES}
             required
           />
-
-          {isSiteScopedRole(form.requestedRole) ? (
-            <div>
-              <p className="text-sm font-medium text-slate-200">Sites (optional)</p>
-              <p className="mt-1 text-xs text-slate-400">
-                Select preferred sites if you know them. An admin can assign sites when approving.
-              </p>
-              <div className="mt-2 max-h-48 space-y-2 overflow-y-auto overscroll-contain rounded-xl border border-slate-700 bg-slate-950/40 p-3">
-                {sites.length === 0 ? (
-                  <p className="text-sm text-slate-400">
-                    No sites listed yet — you can still submit. An admin will assign sites on approval.
-                  </p>
-                ) : (
-                  sites.map((site) => (
-                    <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
-                      <input
-                        type="checkbox"
-                        checked={form.requestedSiteIds.includes(site.id)}
-                        onChange={() => toggleSite(site.id)}
-                      />
-                      {site.name}
-                    </label>
-                  ))
-                )}
-              </div>
-            </div>
-          ) : null}
 
           <label className="block text-sm font-medium text-slate-200">
             Reason

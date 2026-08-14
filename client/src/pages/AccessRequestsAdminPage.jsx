@@ -12,9 +12,9 @@ function buildReviewDraft(request, allSites = []) {
   const requestedRole = request.requestedRole;
   let requestedSiteIds = Array.isArray(request.requestedSiteIds) ? [...request.requestedSiteIds] : [];
 
-  // One-click approve: if Ops Lead / Operator has no sites yet and the org has exactly one, pre-select it.
-  if (isSiteScopedRole(requestedRole) && requestedSiteIds.length === 0 && allSites.length === 1) {
-    requestedSiteIds = [allSites[0].id];
+  // One-click approve: pre-select every org site when the request has none yet.
+  if (isSiteScopedRole(requestedRole) && requestedSiteIds.length === 0 && allSites.length > 0) {
+    requestedSiteIds = allSites.map((site) => site.id);
   }
 
   return {
@@ -24,12 +24,11 @@ function buildReviewDraft(request, allSites = []) {
   };
 }
 
-/** Resolve sites for approval; auto-picks the only org site when none were chosen. */
+/** Resolve sites for approval; if none chosen, assign every org site. */
 function resolveApprovalSiteIds(draft, allSites) {
   if (!draft || !isSiteScopedRole(draft.requestedRole)) return [];
   if (draft.requestedSiteIds?.length) return draft.requestedSiteIds;
-  if (allSites.length === 1) return [allSites[0].id];
-  return [];
+  return allSites.map((site) => site.id);
 }
 
 export default function AccessRequestsAdminPage() {
@@ -125,23 +124,8 @@ export default function AccessRequestsAdminPage() {
       action === "approve" ? resolveApprovalSiteIds(draft, sites) : [];
 
     if (action === "approve" && draft && isSiteScopedRole(draft.requestedRole) && approvalSiteIds.length === 0) {
-      setError(
-        sites.length === 0
-          ? "Create a site first, then approve Ops Lead or Operator access."
-          : "Select at least one site before approving Ops Lead or Operator access.",
-      );
+      setError("Create a site first, then approve Ops Lead or Operator access.");
       return;
-    }
-
-    // Keep the draft in sync when we auto-picked the sole site on Approve.
-    if (
-      action === "approve" &&
-      draft &&
-      isSiteScopedRole(draft.requestedRole) &&
-      !(draft.requestedSiteIds?.length) &&
-      approvalSiteIds.length > 0
-    ) {
-      updateReviewDraft(requestId, { requestedSiteIds: approvalSiteIds });
     }
 
     setActingId(requestId);
@@ -172,7 +156,7 @@ export default function AccessRequestsAdminPage() {
     <div className="space-y-6">
       <PageHeader
         title="Access requests"
-        description="Review requests, choose the correct role, and approve or reject access."
+        description="Press Approve to activate the account. Sites for Ops Lead / Operator are pre-selected (all sites by default); adjust only if needed."
       />
       <ErrorBanner message={error} />
 
@@ -240,9 +224,12 @@ export default function AccessRequestsAdminPage() {
                             value={draft.requestedRole}
                             onChange={(event) => {
                               const nextRole = event.target.value;
-                              let nextSites = isSiteScopedRole(nextRole) ? draft.requestedSiteIds : [];
-                              if (isSiteScopedRole(nextRole) && nextSites.length === 0 && sites.length === 1) {
-                                nextSites = [sites[0].id];
+                              let nextSites = [];
+                              if (isSiteScopedRole(nextRole)) {
+                                nextSites =
+                                  draft.requestedSiteIds.length > 0
+                                    ? draft.requestedSiteIds
+                                    : sites.map((site) => site.id);
                               }
                               updateReviewDraft(entry.id, {
                                 requestedRole: nextRole,
@@ -260,7 +247,7 @@ export default function AccessRequestsAdminPage() {
                         {isPending && draft && isSiteScopedRole(draft.requestedRole) ? (
                           draft.requestedSiteIds?.length
                             ? siteNames(draft.requestedSiteIds)
-                            : <span className="text-slate-400">Assign in Actions →</span>
+                            : <span className="text-slate-400">All sites on Approve</span>
                         ) : (
                           siteNames(entry.requestedSiteIds)
                         )}
@@ -277,12 +264,40 @@ export default function AccessRequestsAdminPage() {
                           <div className="flex min-w-[12rem] flex-col gap-2">
                             {draft && isSiteScopedRole(draft.requestedRole) ? (
                               <div className="rounded-xl border border-slate-600 bg-slate-950/50 p-2">
-                                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                                  Assign sites
-                                </p>
+                                <div className="mb-1.5 flex items-center justify-between gap-2">
+                                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                                    Sites (pre-selected)
+                                  </p>
+                                  {sites.length > 1 ? (
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        className="text-[11px] font-medium text-orange-300 hover:underline"
+                                        disabled={actingId === entry.id}
+                                        onClick={() =>
+                                          updateReviewDraft(entry.id, {
+                                            requestedSiteIds: sites.map((site) => site.id),
+                                          })
+                                        }
+                                      >
+                                        All
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="text-[11px] font-medium text-slate-400 hover:underline"
+                                        disabled={actingId === entry.id}
+                                        onClick={() =>
+                                          updateReviewDraft(entry.id, { requestedSiteIds: [] })
+                                        }
+                                      >
+                                        Clear
+                                      </button>
+                                    </div>
+                                  ) : null}
+                                </div>
                                 {sites.length === 0 ? (
                                   <p className="text-xs text-amber-300">
-                                    No sites in the system yet. Create a site first, or approve as Requester.
+                                    No sites yet. Create a site first, or approve as Requester.
                                   </p>
                                 ) : (
                                   <div className="flex max-h-36 flex-col gap-1.5 overflow-y-auto">
@@ -302,13 +317,9 @@ export default function AccessRequestsAdminPage() {
                                     ))}
                                   </div>
                                 )}
-                                {(draft.requestedSiteIds?.length ?? 0) === 0 ? (
-                                  <p className="mt-1.5 text-xs text-amber-300">
-                                    {sites.length === 1
-                                      ? "Will assign the only site automatically on Approve."
-                                      : "Check at least one site, then Approve."}
-                                  </p>
-                                ) : null}
+                                <p className="mt-1.5 text-xs text-slate-400">
+                                  Approve assigns the checked sites automatically.
+                                </p>
                               </div>
                             ) : null}
                             <input

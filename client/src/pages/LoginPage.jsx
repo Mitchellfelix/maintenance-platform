@@ -5,20 +5,18 @@ import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import FormField from "../components/FormField.jsx";
 import RoleSelect from "../components/RoleSelect.jsx";
-import { REGISTRATION_ROLES, isSiteScopedRole } from "../lib/permissions.js";
+import { REGISTRATION_ROLES } from "../lib/permissions.js";
 
 export default function LoginPage() {
   const { login, register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState("login");
-  const [sites, setSites] = useState([]);
   const [form, setForm] = useState({
     email: "",
     password: "",
     name: "",
     requestedRole: "REQUESTER",
-    requestedSiteIds: [],
     reason: "",
   });
   const [error, setError] = useState("");
@@ -33,35 +31,13 @@ export default function LoginPage() {
       .catch(() => setVersion(""));
   }, []);
 
-  useEffect(() => {
-    if (mode !== "register") return;
-
-    api
-      .get("/api/auth/registration-sites")
-      .then((response) => setSites(response.data))
-      .catch(() => setSites([]));
-  }, [mode]);
-
   if (isAuthenticated) {
     return <Navigate to={location.state?.from || "/"} replace />;
   }
 
   function updateField(event) {
     const { name, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === "requestedRole" && !isSiteScopedRole(value) ? { requestedSiteIds: [] } : {}),
-    }));
-  }
-
-  function toggleSite(siteId) {
-    setForm((current) => ({
-      ...current,
-      requestedSiteIds: current.requestedSiteIds.includes(siteId)
-        ? current.requestedSiteIds.filter((id) => id !== siteId)
-        : [...current.requestedSiteIds, siteId],
-    }));
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
   async function handleSubmit(event) {
@@ -77,22 +53,17 @@ export default function LoginPage() {
         return;
       }
 
-      const payload = {
+      const result = await register({
         email: form.email,
         password: form.password,
         name: form.name,
         requestedRole: form.requestedRole,
         reason: form.reason || undefined,
-      };
-      if (isSiteScopedRole(form.requestedRole)) {
-        payload.requestedSiteIds = form.requestedSiteIds;
-      }
-
-      const result = await register(payload);
+      });
       if (result.pendingApproval) {
         setSuccess(
           result.message ||
-            "Your account is pending admin approval. You can sign in after an admin approves your request.",
+            "Your account is pending admin approval. An admin will assign your role and sites, then you can sign in.",
         );
         setMode("login");
         return;
@@ -128,7 +99,7 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-slate-400">
             {mode === "login"
               ? "Use your account after an admin has approved your access request."
-              : "Create an account request. An admin must approve it before you can sign in."}
+              : "Submit a request. An admin approves it and assigns sites — no site selection needed here."}
           </p>
 
           <div className="mt-6 flex gap-2 rounded-2xl bg-slate-700/80 p-1">
@@ -165,32 +136,6 @@ export default function LoginPage() {
                   roles={REGISTRATION_ROLES}
                   required
                 />
-                {isSiteScopedRole(form.requestedRole) ? (
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Sites (optional)</p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      Select preferred sites if you know them. An admin can assign sites when approving.
-                    </p>
-                    <div className="mt-2 max-h-40 space-y-2 overflow-y-auto overscroll-contain rounded-xl border border-slate-700 bg-slate-950/40 p-3">
-                      {sites.length === 0 ? (
-                        <p className="text-sm text-slate-400">
-                          No sites listed yet — you can still submit. An admin will assign sites on approval.
-                        </p>
-                      ) : (
-                        sites.map((site) => (
-                          <label key={site.id} className="flex items-center gap-2 text-sm text-slate-200">
-                            <input
-                              type="checkbox"
-                              checked={form.requestedSiteIds.includes(site.id)}
-                              onChange={() => toggleSite(site.id)}
-                            />
-                            {site.name}
-                          </label>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                ) : null}
                 <FormField
                   label="Reason"
                   name="reason"
