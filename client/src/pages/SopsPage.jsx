@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import FormField from "../components/FormField.jsx";
 import LoadingState from "../components/LoadingState.jsx";
-import PageHeader, { EmptyState, RecordLink } from "../components/PageHeader.jsx";
+import PageHeader, { EmptyState } from "../components/PageHeader.jsx";
 
 const DEPARTMENT_OPTIONS = [
   "Operations",
@@ -34,6 +34,7 @@ export default function SopsPage() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState("");
+  const [copiedSopId, setCopiedSopId] = useState("");
 
   async function loadSops() {
     setLoading(true);
@@ -92,6 +93,29 @@ export default function SopsPage() {
       setError(getErrorMessage(err, "Unable to create SOP"));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function copyDocumentLink(sopId, url) {
+    if (!url) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "absolute";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedSopId(sopId);
+      window.setTimeout(() => setCopiedSopId(""), 1600);
+    } catch {
+      setError("Could not copy link. Please copy it from the SOP detail page.");
     }
   }
 
@@ -207,12 +231,37 @@ export default function SopsPage() {
               <h3 className="mb-3 text-lg font-semibold text-slate-100">{department}</h3>
               <div className="grid gap-4">
                 {items.map((sop) => (
-                  <RecordLink
-                    key={sop.id}
-                    to={`/sops/${sop.id}`}
-                    title={sop.title}
-                    subtitle={[sop.summary, `v${sop.version}`].filter(Boolean).join(" · ")}
-                  />
+                  <div key={sop.id} className="flow-card p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <Link to={`/sops/${sop.id}`} className="min-w-0 flex-1 transition-opacity hover:opacity-90">
+                        <p className="font-medium">{sop.title}</p>
+                        <p className="mt-1 text-sm text-slate-400">
+                          {[sop.summary, `v${sop.version}`].filter(Boolean).join(" · ")}
+                        </p>
+                      </Link>
+                      {sop.documentUrl ? (
+                        <div className="flex shrink-0 items-center gap-2">
+                          <a
+                            href={sop.documentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-lg border border-orange-400/40 px-3 py-1.5 text-xs font-semibold text-orange-300 hover:bg-orange-400/10"
+                            title="Open document in Google Drive"
+                          >
+                            Open in Google Drive
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => copyDocumentLink(sop.id, sop.documentUrl)}
+                            className="rounded-lg border border-slate-500 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700/50"
+                            title="Copy document link"
+                          >
+                            {copiedSopId === sop.id ? "Copied" : "Copy link"}
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>
