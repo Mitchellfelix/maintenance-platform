@@ -28,7 +28,7 @@ else
 fi
 echo ""
 echo "Dashboard steps (https://railway.app):"
-echo "  1. New project → Deploy from GitHub → Mitchellfelix/maintenance-platform"
+echo "  1. New project → Deploy from GitHub → Mitchell Felix (Mitchellfelix/maintenance-platform)"
 echo "  2. Add Postgres plugin; wait until DATABASE_URL appears on the web service"
 echo "  3. Web service → Variables:"
 echo "       JWT_SECRET=<strong random>"

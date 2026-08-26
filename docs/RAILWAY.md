@@ -7,7 +7,7 @@ Your Mac is **not** required for teammates. Railway runs the app + Postgres 24/7
 ### 1. Railway project (dashboard — recommended)
 
 1. Sign in at [railway.app](https://railway.app)
-2. **New Project** → **Deploy from GitHub repo** → `Mitchellfelix/maintenance-platform` (branch `main`)
+2. **New Project** → **Deploy from GitHub repo** → `Mitchell Felix` (`Mitchellfelix/maintenance-platform`, branch `main`)
 3. After the first service appears, **Add Postgres** and ensure `DATABASE_URL` is available to the web service
 4. Continue with volume + variables below, then redeploy
 

@@ -6,7 +6,7 @@ Use this when you want only repo admins to be able to push directly to `main` an
 
 The person running these commands must have **Admin** permission on:
 
-- `Mitchellfelix/maintenance-platform`
+- `Mitchell Felix`'s repo: `Mitchellfelix/maintenance-platform`
 
 ## 1) Require admin code-owner review
 
@@ -15,7 +15,7 @@ Create `CODEOWNERS` on `main` so PR approval is tied to admin ownership.
 ```bash
 mkdir -p .github
 cat > .github/CODEOWNERS <<'EOF'
-* @Mitchellfelix
+* @Mitchellfelix   # Mitchell Felix
 EOF
 git add .github/CODEOWNERS
 git commit -m "Require admin code-owner review"

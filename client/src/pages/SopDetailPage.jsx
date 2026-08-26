@@ -50,6 +50,7 @@ export default function SopDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   async function loadSop() {
     setLoading(true);
@@ -124,6 +125,29 @@ export default function SopDetailPage() {
     }
   }
 
+  async function copyDocumentLink(url) {
+    if (!url) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "absolute";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedLink(true);
+      window.setTimeout(() => setCopiedLink(false), 1600);
+    } catch {
+      setError("Could not copy document link.");
+    }
+  }
+
   if (loading) return <LoadingState label="Loading SOP..." />;
   if (!sop) {
     return (
@@ -160,14 +184,23 @@ export default function SopDetailPage() {
           </div>
           {sop.summary ? <p className="mt-3 text-sm text-slate-300">{sop.summary}</p> : null}
           {sop.documentUrl ? (
-            <a
-              href={sop.documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
-            >
-              Open document
-            </a>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={sop.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+              >
+                Open in Google Drive
+              </a>
+              <button
+                type="button"
+                onClick={() => copyDocumentLink(sop.documentUrl)}
+                className="inline-flex rounded-xl border border-slate-500 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700/50"
+              >
+                {copiedLink ? "Copied" : "Copy link"}
+              </button>
+            </div>
           ) : null}
           {sop.content ? (
             <pre className="mt-4 whitespace-pre-wrap rounded-2xl border border-slate-600 bg-slate-900/80 p-4 text-sm leading-relaxed text-slate-100">

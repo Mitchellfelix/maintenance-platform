@@ -158,6 +158,7 @@ Stop local host: `npm run team:autostart:off` and `docker compose --profile team
 ## Advanced / developers
 
 ```bash
+# Mitchell Felix repo:
 git clone https://github.com/Mitchellfelix/maintenance-platform.git
 cd maintenance-platform
 npm run team:connect -- https://YOUR-APP.up.railway.app
